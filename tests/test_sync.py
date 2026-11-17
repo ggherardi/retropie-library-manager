@@ -99,6 +99,54 @@ def test_gamelist_preserves_unknown_metadata_and_comments():
     assert merge_gamelist(merged, [game], "/roms/gb") == merged
 
 
+def test_repair_existing_library_changes_only_metadata_and_is_repeatable(tmp_path, remote):
+    game = game_at(tmp_path)
+    first = build_plan(remote, config(), [game], options(game))
+    perform_sync(remote, first, "original", lambda p: None)
+    xml_path = remote.sftp.resolve(first["gamelists"][0]["path"])
+    root = parse_xml(xml_path.read_bytes())
+    for folder in root.findall("folder"):
+        root.remove(folder)  # Legacy generator wrote game entries, but no folder titles.
+    from xml.etree.ElementTree import SubElement, tostring
+
+    SubElement(root.find("game"), "playcount").text = "12"
+    original = tostring(root, encoding="utf-8", xml_declaration=True)
+    xml_path.write_bytes(original)
+    rom_path = remote.sftp.resolve(first["groups"][0]["files"][0]["path"])
+    save = rom_path.with_suffix(".srm")
+    save.write_bytes(b"existing battery save")
+    state = rom_path.with_suffix(".state")
+    state.write_bytes(b"existing save state")
+    before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in (rom_path, save, state)}
+
+    plan = build_plan(remote, config(), [game], options(game))
+    assert plan["can_sync"] and plan["title_reviews"] == []
+    assert plan["groups"][0]["counts"] == {"new": 0, "present": 1, "modified": 0}
+    assert plan["gamelists"][0]["state"] == "update"
+    result = perform_sync(remote, plan, "repair", lambda p: None)
+    assert result["transferred_bytes"] == len(xml_path.read_bytes())
+    assert xml_path.with_name(xml_path.name + ".rlm-backup-repair").read_bytes() == original
+    repaired = parse_xml(xml_path.read_bytes())
+    assert repaired.findtext("folder/name") == game.title
+    assert repaired.findtext("game/playcount") == "12"
+    assert repaired.findtext("game/path") == root.findtext("game/path")
+    assert {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in before} == before
+
+    repeat = build_plan(remote, config(), [game], options(game))
+    writes = remote.sftp.writes
+    assert repeat["required_bytes"] == 0
+    assert perform_sync(remote, repeat, "repeat", lambda p: None)["transferred_bytes"] == 0
+    assert remote.sftp.writes == writes
+
+
+def test_unknown_catalog_title_is_reported_for_review(tmp_path, remote):
+    game = game_at(tmp_path)
+    game.title = "RLM-" + "a" * 24
+    plan = build_plan(remote, config(), [game], options(game))
+    assert plan["title_reviews"][0]["game_id"] == game.id
+    assert "titolo da revisionare" in " ".join(plan["warnings"])
+
+
 @pytest.mark.parametrize(
     "xml", [b'<!DOCTYPE a [<!ENTITY x "bad">]><gameList>&x;</gameList>', b"<wrong/>", b"<broken>"]
 )

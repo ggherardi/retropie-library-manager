@@ -37,6 +37,7 @@ def build_plan(connection, config, games, options):
     media = {}
     xml_games: dict[str, list[dict]] = {}
     warnings = []
+    title_reviews: list[dict] = []
     blocked = []
     by_id = {g.id: g for g in games}
     for entry in manifest["games"]:
@@ -99,6 +100,7 @@ def build_plan(connection, config, games, options):
             for key in ("title", "author", "publisher", "description", "genre", "year", "favorite")
         }
         record["launch"] = launch
+        record["game_id"] = game.id
         if options.covers and game.cover_path:
             try:
                 cover = local_path(game.cover_path)
@@ -145,7 +147,7 @@ def build_plan(connection, config, games, options):
                     read_path = path
                     break
             target = read_path if read_path in candidates[:2] else candidates[1]
-            content = merge_gamelist(existing, records, system_root)
+            content = merge_gamelist(existing, records, system_root, title_reviews)
             item = encoded_file(target, content, "gamelist")
             item.update(
                 read_path=read_path,
@@ -160,6 +162,11 @@ def build_plan(connection, config, games, options):
             warnings.append(
                 "EmulationStation in esecuzione: ROM e copertine trasferibili, gamelist rinviati finché viene chiusa dall’utente."
             )
+    for review in title_reviews:
+        warnings.append(
+            f"Gioco {review['game_id']} ({review['launch']}): titolo da revisionare, "
+            f"nome provvisorio o metadato remoto: {review['title']}"
+        )
     required = sum(f["size"] for g in group_plans for f in g["files"] if f["state"] == "new")
     required += sum(m["size"] for m in media.values() if m["state"] == "new")
     required += sum(m["size"] + m["backup_bytes"] for m in lists if m["state"] != "present")
@@ -177,6 +184,7 @@ def build_plan(connection, config, games, options):
         "free_bytes": space["free"],
         "safety_bytes": config["safety_bytes"],
         "warnings": warnings,
+        "title_reviews": title_reviews,
         "blocked": blocked,
         "can_sync": not blocked,
         "manifest": manifest,
