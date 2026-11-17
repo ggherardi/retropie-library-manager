@@ -15,6 +15,7 @@
 | Connessione interrotta | Usare Riprova trasferimento. I file parziali vengono confrontati e ripresi; i gruppi completi sono saltati. |
 | Gamelist cambiato dopo anteprima | Preparare un nuovo dry-run; nessuna sostituzione del file modificato avviene con il vecchio piano. |
 | Metadati rinviati | Chiudere EmulationStation in un momento concordato, poi ripetere il dry-run. L'app non interrompe sessioni di gioco. |
+| Versione EmulationStation | Consultare la diagnostica o es_log.txt. Sull'installazione RetroPie 4.8 collaudata, `emulationstation --version` avvia un'altra istanza invece di limitarsi a stampare la versione. |
 | posix-rename non disponibile | Conservare il backup e verificare il server SFTP. Non è previsto un fallback che cancelli il gamelist prima di rinominarlo. |
 | CHD bloccato | Verificare core PS1, versione e configurazione. Confermare il supporto nel dispositivo solo dopo tale verifica. |
 | Copertina assente | Verificare il file locale e l'autorizzazione; l'omissione viene segnalata e non cancella un'immagine già registrata nel gamelist. |

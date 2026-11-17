@@ -38,11 +38,27 @@ SHA-256:
 
 `3ea2376b15b34bd26b10e6b31d2753bf8b086098dbdb5ee84d9c0f03d66d3d7f`
 
-Il secondo dry-run rileva la ROM come già presente e richiede solo i 219 byte dei metadati. EmulationStation è rimasta attiva: la scrittura del gamelist è stata correttamente rinviata e non sono stati modificati XML preesistenti. È richiesta l'autorizzazione dell'utente prima di chiudere/riavviare EmulationStation e completare questa parte del collaudo.
+Il secondo dry-run ha rilevato la ROM come già presente e richiesto solo i 219 byte dei metadati. Con EmulationStation ancora attiva, la prima scrittura del gamelist è stata correttamente rinviata e non sono stati modificati XML preesistenti.
+
+### Completamento dopo autorizzazione dell'utente
+
+Ricevuta l'autorizzazione esplicita alla chiusura e al riavvio, EmulationStation è stata chiusa con SIGTERM gestito, senza terminazione forzata. Non risultavano emulatori o giochi attivi. È stata chiusa anche un'istanza aggiuntiva avviata durante il precedente controllo manuale con `--version`: questa opzione non termina il programma su tale installazione. La diagnostica dell'app legge la versione dal log e non esegue il frontend.
+
+Un nuovo dry-run e la normale API di conferma hanno trasferito esclusivamente **219 byte di XML**, saltando la ROM identica. Il gamelist è nuovo: non è stato sostituito alcun XML preesistente e non era necessario un backup in questa prova. Destinazione effettiva:
+
+`/opt/retropie/configs/all/emulationstation/gamelists/gb/gamelist.xml`
+
+Verificati parsing XML, titolo `2048gb`, riferimento relativo `./rlm-3ea2376b15b34bd26b10e6b3/2048.gb`, presenza della ROM e suo SHA-256. Hash del gamelist da 219 byte:
+
+`7a21991fa8cfe9921b5a6b066f11e531b154893d361a9a94d0bb12ae35bccb7f`
+
+La ripetizione completa, con nuova anteprima e conferma, ha richiesto e trasferito **0 byte**: ROM e gamelist risultano già presenti, senza metadati rinviati.
+
+EmulationStation è stata riavviata come utente pi sulla console `/dev/tty1`. Verificata una sola istanza del binario, creazione riuscita della finestra e lettura del gamelist Game Boy nel log di avvio, senza errori di livello 0. L'hash XML è rimasto identico dopo il riavvio. La diagnostica dell'app è stata aggiornata e riporta EmulationStation attiva. Nessun gioco è stato avviato nell'emulatore durante questa prova.
 
 ## Limiti delle verifiche
 
-- Scrittura del gamelist nella destinazione reale: in attesa dell'autorizzazione a chiudere EmulationStation. Generazione, merge, backup e ripetizione senza modifiche sono verificati automaticamente.
+- Scrittura di un nuovo gamelist e ripetizione senza modifiche: verificate sul Raspberry. Merge e backup di gamelist preesistenti: verificati nei test automatici; non era presente un gamelist Game Boy da sostituire nel collaudo reale.
 - Lancio del gioco nell'emulatore: non eseguito e non dichiarato verificato.
 - BIN/CUE, multidisco, CHD e copertine: coperti dai test sintetici; nessuna immagine PS1 o BIOS commerciale è stata trasferita per il collaudo.
 - MicroSD 128 GB e prestazioni con grandi librerie remote: non provate su hardware; la capacità viene comunque letta dal filesystem effettivo.
