@@ -55,3 +55,4 @@ known_hosts*
 authorized_keys*
 *.pem
 *.key
+build/

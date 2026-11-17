@@ -95,6 +95,7 @@ def merge_gamelist(
             "releasedate": f"{game['year']:04d}0101T000000" if game.get("year") else None,
             "favorite": ("true" if game["favorite"] else "false") if "favorite" in game else None,
             "image": game.get("image"),
+            "thumbnail": game.get("thumbnail"),
         }
         changed = _update(node, values) or changed
         if managed:
@@ -112,6 +113,7 @@ def merge_gamelist(
                         "name": title,
                         "desc": game.get("description"),
                         "image": game.get("image"),
+                        "thumbnail": game.get("thumbnail"),
                     },
                 )
                 or changed

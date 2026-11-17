@@ -6,6 +6,7 @@ import posixpath
 from pathlib import Path
 from typing import Any
 
+from backend.es_collections import build_collection_files
 from backend.exports import prepare_games
 from backend.gamelist import merge_gamelist
 from backend.paths import digest, local_path
@@ -129,6 +130,34 @@ def build_plan(connection, config, games, options):
             except (OSError, ValueError) as exc:
                 warnings.append(f"{game.title}: copertina omessa ({exc})")
         xml_games.setdefault(platform, []).append(record)
+        screenshot = getattr(game, "_rlm_screenshot", "")
+        if options.screenshots and screenshot:
+            image = local_path(screenshot)
+            if (
+                image.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}
+                or image.stat().st_size > 20_000_000
+            ):
+                raise ValueError("Screenshot non supportato")
+            sha = digest(image)
+            relative = f".rlm-media/{sha}{image.suffix.lower()}"
+            target = system_root + "/" + relative
+            actual = remote.hash(target)
+            state = "new" if actual is None else "present" if actual == sha else "modified"
+            if state == "modified":
+                blocked.append("Screenshot remoto modificato: " + target)
+            media[target] = {
+                "path": target,
+                "source": str(image),
+                "sha256": sha,
+                "size": image.stat().st_size,
+                "state": state,
+                "kind": "screenshot",
+                "game_id": game.id,
+            }
+            # RetroPie ES supports image + thumbnail; retain cover as the TV thumbnail.
+            if record.get("image"):
+                record["thumbnail"] = record["image"]
+            record["image"] = "./" + relative
     lists = []
     if options.metadata:
         for platform, records in xml_games.items():
@@ -162,6 +191,15 @@ def build_plan(connection, config, games, options):
             warnings.append(
                 "EmulationStation in esecuzione: ROM e copertine trasferibili, gamelist rinviati finché viene chiusa dall’utente."
             )
+    collection_support = None
+    if options.collection:
+        collection_files, collection_support, collection_warnings = build_collection_files(
+            connection, remote, config, diag, manifest, games, encoded_file
+        )
+        lists.extend(collection_files)
+        warnings.extend(collection_warnings)
+        if diag["es_running"] and any(f["state"] != "present" for f in collection_files):
+            warnings.append("Raccolta e impostazioni saranno rinviate finché EmulationStation resta attiva.")
     for review in title_reviews:
         warnings.append(
             f"Gioco {review['game_id']} ({review['launch']}): titolo da revisionare, "
@@ -185,6 +223,7 @@ def build_plan(connection, config, games, options):
         "safety_bytes": config["safety_bytes"],
         "warnings": warnings,
         "title_reviews": title_reviews,
+        "collection_support": collection_support,
         "blocked": blocked,
         "can_sync": not blocked,
         "manifest": manifest,

@@ -1,0 +1,505 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "game_sha256": "ab0b2ab0f7b10d0beba5fe8225b01a49c5b2387a7044c57f911e6cfb79d9faa7",
+      "title": "Gold Rush",
+      "platform": "megadrive",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/goldrush.png",
+          "git_blob_sha1": "e7d15f0853487a4f4e39cf9b7692416b3a0c5a51",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/goldrush.txt",
+          "notice_git_blob_sha1": "71fdf3f068530ce47e7da4b082d2bf4c99a0d9ca",
+          "revision": "69799854cb357a252ff5eda173381feb5e81aac5",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "39cd650d9225785e9c93d3beb8ba95334eb16077ab930cbfe5f75d9999991576",
+      "title": "Old Towers",
+      "platform": "megadrive",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/oldtowers.png",
+          "git_blob_sha1": "decede658724b93e8bdac2a1c3fac26179d624c7",
+          "license": "CC-BY-NC-SA-4.0",
+          "terms": "CC-BY-NC-SA-4.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/oldtowers.txt",
+          "notice_git_blob_sha1": "a49150e196826fdad3565f9a64555557ecc1cf2c",
+          "revision": "69799854cb357a252ff5eda173381feb5e81aac5",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "14c9d2fa5fcba490f01b14adff6fd43c7ed63805ef68d48f9b599952c280d95d",
+      "title": "Scorpion Illuminati",
+      "platform": "megadrive",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/scorpionilluminati.png",
+          "git_blob_sha1": "7d4c3ede55e966f36d5be9315aa8f24f320cc362",
+          "license": "Artistic-2.0",
+          "terms": "Artistic-2.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/scorpionilluminati.txt",
+          "notice_git_blob_sha1": "488a276b6cf596113734af4e2054a6089edc32b9",
+          "revision": "69799854cb357a252ff5eda173381feb5e81aac5",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "1739bced8c31704612a73c9fec3abdaf449a66510d32853750abc66512661d28",
+      "title": "Mega Cheril Perils",
+      "platform": "megadrive",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/mega-cheril-perils.png",
+          "git_blob_sha1": "66d5a8361b26943ff75e1dfe70c13d5e5cb37d9b",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/md-games/69799854cb357a252ff5eda173381feb5e81aac5/mega-cheril-perils.txt",
+          "notice_git_blob_sha1": "326863358a95ed600406eeb14e89fd1c56c14c36",
+          "revision": "69799854cb357a252ff5eda173381feb5e81aac5",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "7b323059215f10b0ebc10cb0a13958adb8294d2b1f49fe0c20f0a4fd6269e342",
+      "title": "GRAVITY BEAM: MASTER GAIDEN",
+      "platform": "mastersystem",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/gravitybeam.png",
+          "git_blob_sha1": "beb300fee7df1d8f116554cc54012b4a57c33abe",
+          "license": "BSD-3-Clause",
+          "terms": "BSD-3-Clause",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/gravitybeam.txt",
+          "notice_git_blob_sha1": "84adf32ce95547d4488e0fd9ab28781261422451",
+          "revision": "81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "6a1d49454cc1931a014cff9ac9ca69fea09fdec75e6194e40639d8f925313689",
+      "title": "Lander1 v1.4",
+      "platform": "mastersystem",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/lander1.png",
+          "git_blob_sha1": "cf130c38dc4dbf49fe8e50fd8d0c46a4ca12bfad",
+          "license": "GPL-3.0-or-later",
+          "terms": "GPL-3.0-or-later",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/lander1.txt",
+          "notice_git_blob_sha1": "6cc851a87f8622caab6ccc269ea7a0442cb0b43e",
+          "revision": "81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "9b7a8b0df648dd9078e222fcdb8e497e96b59e446d990e76220e23025469ab32",
+      "title": "Lander2 v0.C",
+      "platform": "mastersystem",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/lander2.png",
+          "git_blob_sha1": "5cdd5669fa77ac48dac39cf1152746bd84d36d78",
+          "license": "GPL-3.0-or-later",
+          "terms": "GPL-3.0-or-later",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/sms-games/81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730/lander2.txt",
+          "notice_git_blob_sha1": "412401ba798f1a1f30853a2235744165a8c7171e",
+          "revision": "81fb3d1b9d435eb5af930e3ac2bc39de1fdcb730",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "f597c76ef431eb1c2d79ffa6e1827f1d46006404398bfa0484d9d8f72c67e943",
+      "title": "Falling",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/falling.png",
+          "git_blob_sha1": "ddab628327af74572b365a8df5955ac871c0ba3e",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/falling.txt",
+          "notice_git_blob_sha1": "b4b529f10d44a45b9f3b031e0bb64783dc431a19",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "01b764db2ebd393c37388e89a9e4adef853344eedcc5d1e42110c04a479e8476",
+      "title": "F-FF",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/fff.png",
+          "git_blob_sha1": "c414b961fdd2ae42ca2c4cee84e83f78bedd8087",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/fff.txt",
+          "notice_git_blob_sha1": "48b3410d0b2a03331e6e813c4f08937d1131b1e9",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "675f494d04d0adbe7d926eab70464ad9c12558465f7f6e0849aee80204ce38d3",
+      "title": "Lunar Limit",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/lunarlimit.png",
+          "git_blob_sha1": "1f0c8eb33b822b9c5c858ae861c7f1a078c27b65",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/lunarlimit.txt",
+          "notice_git_blob_sha1": "d857cbc6a0e78794069966f2808e30d518500979",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "4e4d1dea5991d3f9d6ba5e6f0b0862e20eb3baf1224a169c34685ea138623639",
+      "title": "RALPH 4",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/ralph4.png",
+          "git_blob_sha1": "7d2ca8b24d0c3a66d220a8ebffd20241aae96446",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/ralph4.txt",
+          "notice_git_blob_sha1": "5f5f624204586acba4a216e91ebce7f2acc58db2",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "13abbea91f553780c88c2a85a40b7e86fd5916026c01bfc4f88a8b9b9a9abfe1",
+      "title": "RobotFindsKitten for NES 0.10.122",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/robotfindskitten.png",
+          "git_blob_sha1": "4a1b560516400fa4a1f2bc6a605185a0e51abba7",
+          "license": "Zlib",
+          "terms": "Zlib",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/robotfindskitten.txt",
+          "notice_git_blob_sha1": "7fa2f2f67fe00c70c242c7355f40d0f105181cb0",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "a1559cc5b15c05109484ab1b1470a4f6160cb0747cb15fad61cbeffe91fb02ff",
+      "title": "Star Evil",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/starevil.png",
+          "git_blob_sha1": "e41ec3e71880e9b7bfdda61d3ed9a64a0a98af65",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/starevil.txt",
+          "notice_git_blob_sha1": "58032802c338665904f6d165ed958d7b955ed31c",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "cae1cabed04c46aa84682f9666fe0e45df7525e2d8b81807286cc0d49186cdda",
+      "title": "NesertBus",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/nesertbus.png",
+          "git_blob_sha1": "5ad08c02927e063b2f62b293b6b6739b81447cbc",
+          "license": "CC-BY-SA-4.0",
+          "terms": "CC-BY-SA-4.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/nesertbus.txt",
+          "notice_git_blob_sha1": "dbf74398460545ac399ebf488195fce7afbf0d88",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "9e3daee355eb56a80e73ce314feabe8f0bae380cb80a32468e0a1962e8c9c9ec",
+      "title": "Bootee",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/bootee.png",
+          "git_blob_sha1": "18f196af8a2902249f4bb920aebba89fd53a3232",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/bootee.txt",
+          "notice_git_blob_sha1": "01f1b3d71869af2f259f837320da70095d0f9d1f",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "c23afa0c6c9a3f1ef00426eaca2b3af4cecec83c9460e1eb4e282ea948e24c32",
+      "title": "Cheril the Goddess",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/cheril-the-goddess.png",
+          "git_blob_sha1": "fe48c891712a985612303e55b177d51b221ebc09",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/cheril-the-goddess.txt",
+          "notice_git_blob_sha1": "92d00c01fc7b46da73a97f87a390bd09f8fbb80a",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "6fe404744ba7a77951a368d52d01b448f3a4dc9f0651c0d29f5bc54ce76e893f",
+      "title": "Miedow (Cheril's Nightmares)",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/miedow.png",
+          "git_blob_sha1": "022c6b15541484a76565a217d539de5ccd0c3a17",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/miedow.txt",
+          "notice_git_blob_sha1": "6eb82a4ca4431acaceba246fac1bf249231a6fac",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "67eaa300c8abc5eca33f96f8d80df6a6b7ce8a808218a159b38c567e05f5fbdd",
+      "title": "Super Uwol",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/superuwol.png",
+          "git_blob_sha1": "3fa6ce60797f3dfa20fd08d6359c084b0ed40603",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/superuwol.txt",
+          "notice_git_blob_sha1": "0a7687de0e5b2911d5075de52e6d6e6a98c56f43",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "d8d7e1f61f1961f2ac71e273b9267fe480c220748d740f5160e0388b61a9ca92",
+      "title": "31 in 1 Real Game!",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/31in1realgame-multicart.png",
+          "git_blob_sha1": "e3eb504367daf3465e7c6c06ca667f1427e7a342",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/31in1realgame-multicart.txt",
+          "notice_git_blob_sha1": "b8a5ed04b92a50959712e8d2cee99726331aa561",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "45838d03dd83372d70b3636852e9eb0547a9493c7bbad7b5daf4eaa055a35b93",
+      "title": "Jet Paco - Space Agent!",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/jetpaco.png",
+          "git_blob_sha1": "4f241ab5a146647e44a4d156c7a54c0b99edee8b",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/jetpaco.txt",
+          "notice_git_blob_sha1": "414c9e97f0b1d6b90c0cd769c67e6ac8090a48d1",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "c76222d50efee0ac625a43d0c39ed91870342c02b2a64bd3923698de9551e0eb",
+      "title": "Lala The Magical",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/lala.png",
+          "git_blob_sha1": "0367a8380e47f11f9169496e83e13e1a5ca9d3ea",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/lala.txt",
+          "notice_git_blob_sha1": "4755d0878f92c1853ce9f25d1b15468d37b2e046",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "dc7dfe0becee89c9de81c03a68b86cd4e4fab92ae4906dfd58b44fbeed187fbf",
+      "title": "Sgt. Helmet - Training Day",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/sgthelmet.png",
+          "git_blob_sha1": "82a8032b3ab8d4d8709b817bbb19d82fe051c39f",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/sgthelmet.txt",
+          "notice_git_blob_sha1": "e3b7555f8b3cbe678ca8181a14d294f1934f5cb8",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "849555eaccdd2739ad484084505ad68d66de762f55364ade735d3ab9ad4b0d0a",
+      "title": "Sir Ababol Remastered Edition NES",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/sir-ababol-remastered.png",
+          "git_blob_sha1": "d85bd204a22ed226763254f306c997ea44709c72",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/sir-ababol-remastered.txt",
+          "notice_git_blob_sha1": "deb706f067e06b8f046652f2b1f99b7680c6fed2",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "9044af3c0096c99d80bd04c2e6b1e491f16e8f9472ad72293a5d8a417ab2f693",
+      "title": "Wo Xiang Niao Niao",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/wo-xiang-niao-niao.png",
+          "git_blob_sha1": "66f753ca761c165d8a1825a085a85f84b5e5d58b",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/wo-xiang-niao-niao.txt",
+          "notice_git_blob_sha1": "bd344c6aa702149cf4dbd24a0cbec4cd4bc3be64",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "fb0026dd31b0433dd24e81b7c7bee1dbdaa76e2cde60c81a2cdf4778f8e4b4eb",
+      "title": "Yun",
+      "platform": "nes",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/yun.png",
+          "git_blob_sha1": "43dd0b32aa0a6a56b25ceb9829d625aa5b361451",
+          "license": "CC-BY-NC-SA-3.0",
+          "terms": "CC-BY-NC-SA-3.0; engine terms as included in notice",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/nes-games/d20061bf9917e8bb8b947d4dba8c59372f5762a0/yun.txt",
+          "notice_git_blob_sha1": "35439f2aeef98bac98b0bf8c17813e90fd53afb5",
+          "revision": "d20061bf9917e8bb8b947d4dba8c59372f5762a0",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "fa15de57991bc4f2d29663be6b9a901df03e05a182bf44d93dc0a6d26fd6f91a",
+      "title": "Blast Arena Advance",
+      "platform": "gba",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/gba-games/add86969f1a7a3b9534822a9a015d05ed20a0dcf/blastarenaadvance.png",
+          "git_blob_sha1": "ee2376918e65421ad4071e28de5725ca3cafc258",
+          "license": "MIT",
+          "terms": "MIT",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/gba-games/add86969f1a7a3b9534822a9a015d05ed20a0dcf/blastarenaadvance.txt",
+          "notice_git_blob_sha1": "0c4e43f0094252f98eab5c4ac836333dfcb7e5d7",
+          "revision": "add86969f1a7a3b9534822a9a015d05ed20a0dcf",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    },
+    {
+      "game_sha256": "b4fab677795f78d0a3b5cb3025eb5827ddb7d06365a713438255deffc0b99741",
+      "title": "Metal Warrior 4: Agents of Metal",
+      "platform": "gba",
+      "assets": [
+        {
+          "kind": "screenshot",
+          "url": "https://raw.githubusercontent.com/retrobrews/gba-games/add86969f1a7a3b9534822a9a015d05ed20a0dcf/metalwarrior4.png",
+          "git_blob_sha1": "2039c02cfe42f6eef5fbb8121e7de738cb8f8c61",
+          "license": "BSD-3-Clause",
+          "terms": "BSD-3-Clause",
+          "source_url": "https://raw.githubusercontent.com/retrobrews/gba-games/add86969f1a7a3b9534822a9a015d05ed20a0dcf/metalwarrior4.txt",
+          "notice_git_blob_sha1": "781ad973dc67b8cf68867ad2b3e1fa26172982b0",
+          "revision": "add86969f1a7a3b9534822a9a015d05ed20a0dcf",
+          "provenance": "Individually reviewed in Increment 5; original game preview image, also retained as legacy cover thumbnail."
+        }
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "title": "Crazy Driver (v1.1) for Sega Genesis",
+      "reason": "Permesso media specifico da verificare separatamente"
+    },
+    {
+      "title": "Error Rush for SEGA Genesis/MegaDrive",
+      "reason": "Permesso media specifico da verificare separatamente"
+    },
+    {
+      "title": "Pnakys",
+      "reason": "Permesso media specifico da verificare separatamente"
+    }
+  ]
+}

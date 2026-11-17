@@ -179,6 +179,27 @@ def parse_entry(provider: str, revision: str, path: str, raw: dict, tree: dict) 
     )
     cover_node = tree.get(f"{folder}/{screenshot}", {}) if screenshot else {}
     cover = None
+    media = []
+    if assets_license in LICENSES:
+        for filename in raw.get("screenshots", []):
+            if not isinstance(filename, str) or not safe_filename(filename):
+                continue
+            asset = tree.get(f"{folder}/{filename}", {})
+            if not asset.get("sha") or not 0 < asset.get("size", 0) <= 8_000_000:
+                continue
+            media.append(
+                {
+                    "kind": "cover"
+                    if re.search(
+                        r"(?:^|[_ -])(cover|logo|boxart|box|front)(?:$|[_ -])", Path(filename).stem.lower()
+                    )
+                    else "screenshot",
+                    "url": f"https://raw.githubusercontent.com/{repo}/{revision}/{quote(folder + '/' + filename, safe='/')}",
+                    "git_blob_sha1": asset["sha"],
+                    "license": assets_license,
+                    "source_url": metadata_url,
+                }
+            )
     if screenshot and assets_license in LICENSES and cover_node.get("size", 0) <= 8_000_000:
         cover = {
             "url": f"https://raw.githubusercontent.com/{repo}/{revision}/{quote(folder + '/' + screenshot, safe='/')}",
@@ -217,6 +238,7 @@ def parse_entry(provider: str, revision: str, path: str, raw: dict, tree: dict) 
             "git_blob_sha1": node.get("sha"),
             "expected_sha256": sha256,
             "cover": cover,
+            "media": media,
             "evidence": {
                 "url": metadata_url,
                 "revision": revision,

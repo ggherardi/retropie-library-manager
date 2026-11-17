@@ -1,4 +1,5 @@
 import Devices from "./Devices";
+import Collections, { type CollectionView } from "./Collections";
 import Intelligence, { type IntelligenceView } from "./Intelligence";
 import Discovery from "./Discovery";
 import { useCallback, useEffect, useState } from "react";
@@ -34,6 +35,7 @@ import {
 } from "./api";
 
 type Page =
+  | CollectionView
   | IntelligenceView
   | "Dispositivi"
   | "Sincronizzazione"
@@ -54,6 +56,10 @@ type Stats = {
 };
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Grandi Classici", icon: Heart },
+  { label: "Collezione Completa", icon: Library },
+  { label: "Da Recuperare", icon: Search },
+  { label: "Qualità e media", icon: Grid2X2 },
   { label: "Piattaforme", icon: Gamepad2 },
   { label: "Arcade", icon: Disc3 },
   { label: "Neo Geo", icon: Gamepad2 },
@@ -73,6 +79,7 @@ const navigation = [
 
 export default function App() {
   const [page, setPage] = useState<Page>("Dashboard");
+  const [collectionTransfer, setCollectionTransfer] = useState(false);
   const [platforms, setPlatforms] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<Stats>({
     games: 0,
@@ -165,6 +172,7 @@ export default function App() {
   }, [loadGames, stats]);
 
   function navigate(next: Page) {
+    if (next !== "Sincronizzazione") setCollectionTransfer(false);
     setPage(next);
     setNumber(1);
     setError("");
@@ -453,7 +461,9 @@ export default function App() {
               <div className="eyebrow">RETROPIE LIBRARY MANAGER</div>
               <h1>{page}</h1>
               <p>
-                {page === "Dashboard"
+                {["Grandi Classici", "Collezione Completa", "Da Recuperare", "Qualità e media"].includes(page)
+                  ? "Copie locali, riferimenti ai classici e metadati verificabili."
+                  : page === "Dashboard"
                   ? "Tutta la tua passione, in un solo posto."
                   : page === "Catalogo"
                     ? "Esplora e organizza la tua collezione."
@@ -664,6 +674,24 @@ export default function App() {
             />
           )}
           {(page === "Catalogo" || page === "Preferiti") && catalog}
+          {[
+            "Grandi Classici",
+            "Collezione Completa",
+            "Da Recuperare",
+            "Qualità e media",
+          ].includes(page) && (
+            <Collections
+              key={page}
+              view={page as CollectionView}
+              platforms={platforms}
+              onImport={() => navigate("Importazione")}
+              onSync={(ids) => {
+                setSelected(ids);
+                setCollectionTransfer(true);
+                navigate("Sincronizzazione");
+              }}
+            />
+          )}
           {(page === "Game Discovery" || page === "Download Manager") && (
             <Discovery
               view={page === "Game Discovery" ? "discovery" : "downloads"}
@@ -675,6 +703,7 @@ export default function App() {
           {(page === "Dispositivi" || page === "Sincronizzazione") && (
             <Devices
               view={page === "Dispositivi" ? "devices" : "sync"}
+              withCollection={collectionTransfer}
               selected={selected}
               onSelect={setSelected}
               onCatalog={() => navigate("Catalogo")}
@@ -1137,7 +1166,7 @@ export default function App() {
         </div>
         <footer>
           RetroPie Library Manager{" "}
-          <span>Incremento 4 · Arcade Intelligence</span>
+          <span>Incremento 6 · Essential Classics</span>
         </footer>
       </main>
       {detail && (

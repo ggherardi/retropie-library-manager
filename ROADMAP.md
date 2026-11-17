@@ -18,7 +18,15 @@ Implementati cataloghi DAT/XML/JSON/CSV versionati, streaming/background/cancel,
 
 I limiti sono espliciti: nessuna promessa di frame rate, nessun clone merged esportato fingendo di selezionarlo, nessuna ROM commerciale o BIOS acquisito automaticamente, nessun riavvio o configurazione remota impliciti. Corrispondenza DAT/core e test di gioco restano separati.
 
-## Incremento 5 proposto — Prove e recupero guidato
+## Incrementi 5 e 5.1 — Popolamento e titoli leggibili (completati)
+
+Acquisizione autorizzata e sincronizzazione di 97 giochi, copertine disponibili e gamelist verificati. La correzione 5.1 assegna nomi leggibili anche ai nodi folder dei gruppi RLM, preservando percorsi e hash. Prove di trasferimento e prove di gioco restano separate.
+
+## Incremento 6 — Essential Classics, Collections & Media
+
+Catalogo di 914 classici con identificatori e fonti, matching conservativo e selezione manuale; Grandi Classici, Collezione Completa e Da Recuperare; dashboard qualità, media autorizzati con anteprima/cache/correzioni e ruoli separati; raccolta EmulationStation verificata sul dispositivo, sincronizzazione incrementale e backup. Valutazione del tema TV esistente senza modifiche video. Risultati e limiti in docs/VALIDATION-INCREMENT6.md.
+
+## Sviluppi successivi — Prove e recupero guidato
 
 - Collaudo assistito dalla **sessione locale RetroPie**, con consenso per ogni cambiamento: core/opzioni, controller, avvio e prestazioni per singolo gioco, priorità ai contenuti autorizzati già posseduti. CPS-3 e PS1 da valutare sul Pi 3 B+.
 - Ripristino dei backup gamelist, revisione dei conflitti e adozione di librerie già presenti fuori dalle directory RLM, senza cancellazioni automatiche.
@@ -27,6 +35,6 @@ I limiti sono espliciti: nessuna promessa di frame rate, nessun clone merged esp
 - Reindicizzazione di percorsi spostati, selezioni massive guidate oltre la pagina, software-list/CHD e conversioni locali opzionali autorizzate.
 - Aggiornare la dipendenza di sviluppo picomatch appena il manutentore pubblica una correzione, mantenendo audit e test.
 
-## Incremento 6 proposto — Distribuzione desktop
+## Sviluppi successivi — Distribuzione desktop
 
 Installer Windows firmato, selezione cartelle nativa, backup/ripristino guidato, aggiornamenti espliciti, cache configurabile, accessibilità e localizzazioni. Benchmark su librerie remote reali e schede 128 GB quando disponibili e autorizzate.

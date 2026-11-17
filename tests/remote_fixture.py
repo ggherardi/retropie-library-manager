@@ -63,6 +63,7 @@ class FakeConnection:
         self.sftp = LocalSFTP(root)
         self.free = 27_000_000_000
         self.running = False
+        self.collections_supported = False
         for directory in [
             "/home/pi/RetroPie/roms",
             "/home/pi/RetroPie/BIOS",
@@ -94,6 +95,14 @@ class FakeConnection:
 
     def execute(self, command):
         code = base64.b64decode(command.split("base64.b64decode('")[1].split("')")[0]).decode()
+        if "markers=" in code and "custom-.cfg" in code:
+            return json.dumps(
+                {
+                    "supported": self.collections_supported,
+                    "binary_sha256": "test",
+                    "format": "custom-<name>.cfg",
+                }
+            )
         if "memory=" not in code:
             return json.dumps({"free": self.free, "total": 31_000_000_000})
         return json.dumps(

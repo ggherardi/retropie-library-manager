@@ -31,6 +31,7 @@ class DeviceService:
         self.stop = threading.Event()
         self.connect = SSHConnection
         self.game_guard: Callable[..., list] = lambda games, config, connection: []
+        self.collection_guard: Callable[..., str] = lambda games, options: ""
 
     def start(self):
         with self.sessions.begin() as db:
@@ -84,10 +85,12 @@ class DeviceService:
                     games = list(db.scalars(select(Game).where(Game.id.in_(body.game_ids)).order_by(Game.id)))
                     if len(games) != len(set(body.game_ids)):
                         raise ValueError("La selezione contiene giochi non trovati")
+                library_fingerprint = self.collection_guard(games, body)
                 with self.connect(config) as connection:
                     arcade = self.game_guard(games, {**config, "device_id": body.device_id}, connection)
                     plan = build_plan(connection, config, games, body)
                     plan["arcade"] = arcade
+                    plan["library_fingerprint"] = library_fingerprint
                 plan["device_fingerprint"] = fingerprint(config)
                 with self.sessions.begin() as db:
                     run = db.get(SyncRun, run_id)
@@ -139,6 +142,10 @@ class DeviceService:
                             db.scalars(select(Game).where(Game.id.in_([g["id"] for g in plan["groups"]])))
                         )
                     arcade = self.game_guard(selected, {**current, "device_id": device_id}, connection)
+                    if self.collection_guard(selected, SyncInput(**plan["options"])) != plan.get(
+                        "library_fingerprint", ""
+                    ):
+                        raise ValueError("Raccolta o metadati cambiati dopo l'anteprima")
                     if fingerprint(arcade) != fingerprint(plan.get("arcade", [])):
                         raise ValueError("Compatibilità arcade cambiata dopo il dry-run")
                     result = perform_sync(

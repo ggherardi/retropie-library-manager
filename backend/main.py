@@ -19,11 +19,13 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from backend.acquisition import Acquisition
 from backend.acquisition_schemas import EnrichInput
+from backend.collections import Collections
 from backend.config import DATA, PLATFORMS, PROJECT
 from backend.db import Game, Job, Setting, make_engine, sessions
 from backend.devices import DeviceService
 from backend.exports import LocalTransport
 from backend.intelligence import Intelligence
+from backend.media import MediaService
 from backend.paths import allowed, digest, local_path
 from backend.providers import ManifestProvider, download
 from backend.scanner import ScanCancelled, candidate, scan
@@ -53,12 +55,16 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     devices = DeviceService(session_factory, mutation_lock)
     intelligence = Intelligence(session_factory, data_dir, mutation_lock, devices)
     devices.game_guard = intelligence.prepare_games
+    collections = Collections(session_factory, intelligence, mutation_lock)
+    media = MediaService(session_factory, data_dir, acquisition, intelligence, mutation_lock)
+    devices.collection_guard = collections.prepare_sync
 
     @asynccontextmanager
     async def lifespan(app):
         config = Config(str(PROJECT / "alembic.ini"))
         config.attributes["engine"] = engine
         command.upgrade(config, "head")
+        collections.start()
         handler = RotatingFileHandler(
             data_dir / "application.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8"
         )
@@ -81,11 +87,15 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.4.0", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.6.0", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
     app.state.devices = devices
     app.state.intelligence = intelligence
+    app.state.collections = collections
+    app.state.media = media
+    app.include_router(collections.router)
+    app.include_router(media.router)
     app.include_router(intelligence.router)
     app.include_router(acquisition.router)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
@@ -197,7 +207,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "0.4.0"}
+        return {"status": "ok", "version": app.version}
 
     @app.get("/api/platforms")
     def platforms():
@@ -275,7 +285,10 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     @app.put("/api/games/{game_id}")
     def edit_game(game_id: int, body: GamePatch):
         if body.cover_path:
-            cover = allowed(body.cover_path, [*settings()["import_roots"], str(data_dir / "covers")])
+            cover = allowed(
+                body.cover_path,
+                [*settings()["import_roots"], str(data_dir / "covers"), str(data_dir / "media")],
+            )
             if (
                 cover.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}
                 or cover.stat().st_size > 20_000_000
@@ -296,7 +309,10 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
             if not game.cover_path:
                 raise HTTPException(404, "Copertina assente")
             return FileResponse(
-                allowed(game.cover_path, [*settings()["import_roots"], str(data_dir / "covers")])
+                allowed(
+                    game.cover_path,
+                    [*settings()["import_roots"], str(data_dir / "covers"), str(data_dir / "media")],
+                )
             )
 
     @app.post("/api/imports/scan", status_code=202)

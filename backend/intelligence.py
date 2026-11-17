@@ -930,7 +930,9 @@ class Intelligence:
                 value = db.get(GameInsight, game_id)
                 if not value or not value.screenshot_path:
                     raise HTTPException(404, "Screenshot assente")
-                return FileResponse(allowed(value.screenshot_path, self.roots()))
+                return FileResponse(
+                    allowed(value.screenshot_path, [*self.roots(), str(self.data_dir / "media")])
+                )
 
         @router.get("/owned")
         def owned(

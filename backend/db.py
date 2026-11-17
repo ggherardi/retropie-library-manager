@@ -59,6 +59,49 @@ class CatalogSource(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class EssentialClassic(Base):
+    __tablename__ = "essential_classics"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    title: Mapped[str] = mapped_column(String(500), index=True)
+    platform: Mapped[str] = mapped_column(String(30), index=True)
+    genre: Mapped[str] = mapped_column(String(120), default="", index=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    details: Mapped[dict] = mapped_column(JSON)
+
+
+class GameCuration(Base):
+    __tablename__ = "game_curation"
+    game_id: Mapped[int] = mapped_column(primary_key=True)
+    classic_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    mode: Mapped[str] = mapped_column(String(20), default="auto")
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    matched_sha: Mapped[str] = mapped_column(String(64), default="")
+    match_basis: Mapped[str] = mapped_column(String(100), default="")
+    metadata_status: Mapped[str] = mapped_column(String(20), default="unverified")
+    metadata_note: Mapped[str] = mapped_column(Text, default="")
+    metadata_fingerprint: Mapped[str] = mapped_column(String(64), default="")
+
+
+class MediaAsset(Base):
+    __tablename__ = "media_assets"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    game_id: Mapped[int] = mapped_column(Integer, index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    path: Mapped[str] = mapped_column(Text)
+    sha256: Mapped[str] = mapped_column(String(64))
+    evidence: Mapped[dict] = mapped_column(JSON)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class MediaPlan(Base):
+    __tablename__ = "media_plans"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="preview")
+
+
 class CatalogEntry(Base):
     __tablename__ = "catalog_entries"
     __table_args__ = (

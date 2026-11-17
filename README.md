@@ -14,6 +14,19 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 6 — Grandi Classici, raccolte e media
+
+**Grandi Classici**, **Collezione Completa**, **Da Recuperare** e **Qualità e media** separano copie possedute, selezione personale e catalogo di 914 classici. Il catalogo contiene solo metadati e riferimenti verificabili: nessuna ROM commerciale, classifica o licenza presunta.
+
+- Riconoscimento conservativo tramite hash e DAT, associazioni manuali, preferiti, ordine e filtri per presenza, compatibilità, sincronizzazione e test riferiti dall'operatore.
+- Copertine e screenshot distinti, fonti autorizzate, anteprima massiva, cache verificata e correzioni locali con cronologia; placeholder e dati sconosciuti espliciti.
+- Raccolta personalizzata EmulationStation nel formato effettivamente supportato, dry-run, backup e verifica SHA-256. Restano invariati ROM, salvataggi e percorsi; sono preservati i titoli leggibili dell'Incremento 5.1.
+- Dashboard di completezza e revisione dei metadati. Nessuna compatibilità o prova di gioco viene dedotta dal semplice trasferimento.
+
+Aprire **Grandi Classici → Riconosci classici** dopo un'importazione, oppure usare le correzioni nel dettaglio. Per le immagini: **Qualità e media → Trova media autorizzati**. Prima di sincronizzare le raccolte, chiudere EmulationStation dalla console locale; l'app non la riavvia da SSH.
+
+Guide: [raccolte, media e televisore 16:9](docs/COLLECTIONS.md), [collaudo reale](docs/VALIDATION-INCREMENT6.md), [architettura](docs/ARCHITECTURE.md).
+
 ## Incremento 4 — Cataloghi massivi e Arcade Intelligence
 
 **Piattaforme**, **Arcade**, **Neo Geo**, **Cataloghi DAT** e **Raccolte** distinguono metadati, famiglie parent/clone, file presenti, download autorizzati, set verificati e test di gioco riferiti dall'operatore. Il collaudo include oltre 10.000 record reali e 3.000 file sintetici; i numeri effettivi e i limiti sono nel [rapporto di verifica](docs/VALIDATION-INCREMENT4.md).

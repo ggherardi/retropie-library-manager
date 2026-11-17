@@ -131,11 +131,13 @@ export default function Devices({
   selected,
   onSelect,
   onCatalog,
+  withCollection = false,
 }: {
   view: "devices" | "sync";
   selected: number[];
   onSelect: (ids: number[]) => void;
   onCatalog: () => void;
+  withCollection?: boolean;
 }) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceId, setDeviceId] = useState("");
@@ -155,7 +157,9 @@ export default function Devices({
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [metadata, setMetadata] = useState(true);
-  const [covers, setCovers] = useState(false);
+  const [covers, setCovers] = useState(withCollection);
+  const [screenshots, setScreenshots] = useState(withCollection);
+  const [collection, setCollection] = useState(withCollection);
   const [rights, setRights] = useState(false);
   const [mediaRights, setMediaRights] = useState(false);
   const [run, setRun] = useState<Run | null>(null);
@@ -243,6 +247,8 @@ export default function Devices({
       game_ids: selected,
       metadata,
       covers,
+      screenshots,
+      collection,
     });
     setRun(await api<Run>(`/sync/runs/${result.id}`));
     setRights(false);
@@ -724,6 +730,22 @@ export default function Devices({
                   onChange={(e) => setCovers(e.target.checked)}
                 />
                 Includi copertine locali
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={screenshots}
+                  onChange={(e) => setScreenshots(e.target.checked)}
+                />{" "}
+                Includi screenshot locali
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={collection}
+                  onChange={(e) => setCollection(e.target.checked)}
+                />{" "}
+                Raccolta Grandi Classici (supporto verificato sul dispositivo)
               </label>
             </div>
             <div className="section-heading">

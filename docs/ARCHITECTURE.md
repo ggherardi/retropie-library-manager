@@ -1,5 +1,17 @@
 # Architettura
 
+## Collezioni e media (Incremento 6)
+
+La migrazione additiva congelata `0005` introduce EssentialClassic, GameCuration, MediaAsset e MediaPlan. Conserva Game, i percorsi locali, GameInsight e la storia dei trasferimenti. Il catalogo statico versionato viene importato con inserimenti multipli; la revisione SHA-256 evita riscritture a ogni avvio. Gli elenchi dei classici sono paginati con count/offset/limit SQL; il filtro delle copie possedute controlla anche l'esistenza effettiva dei file. Il modulo DAT/FTS5 mantiene i flussi massivi preesistenti.
+
+`collections.py` distingue identità, presenza, inclusione manuale, completezza e prova di gioco. Il matching automatico richiede hash corrente e piattaforma oppure un'identità DAT validata alla generazione attiva. Le corrispondenze ambigue non entrano automaticamente nella raccolta. Preferenze manuali e note di revisione sono persistenti; l'impronta dei metadati rende obsolete le verifiche dopo una modifica.
+
+`media.py` riutilizza matching, client HTTP protetto e coda Intelligence. Un MediaPlan conserva candidati, identità e impronte della fonte; l'applicazione ricontrolla ROM, fonte e assegnazione precedente prima di aggiornare. MediaAsset conserva la cronologia. Cache PNG e ricevuta JSON sono esterne al repository. Copertine usano Game.cover_path; screenshot usano GameInsight.screenshot_path. La licenza degli asset è verificata separatamente; la whitelist delle ROM non viene ampliata dalle eccezioni per le immagini.
+
+`es_collections.py` verifica marcatori nel binario remoto e genera il formato custom-<nome>.cfg documentato da RetroPie. Il parser di es_settings.cfg gestisce il frammento XML senza radice usato da Settings.cpp, conserva gli elementi estranei e cambia soltanto l'abilitazione della raccolta. `sync_engine.py` include screenshot, raccolta e impostazioni nel piano esistente: dimensioni, original SHA, backup, pubblicazione atomica e rinvio con EmulationStation attiva. L'impronta della libreria blocca piani diventati obsoleti. La raccolta richiede tutti i membri nel piano; le righe esterne al manifest restano intatte.
+
+`Collections.tsx` offre le tre viste e la dashboard qualità con dettagli, anteprima immagini e correzioni. Le copie mancanti non sono visualizzate come installate. Le API `/api/collections` e `/api/media` sono documentate nell'OpenAPI locale. La [guida operativa](COLLECTIONS.md) descrive fonti, diritti, collezioni RetroPie, limiti e visualizzazione su TV.
+
 ## Cataloghi massivi e Arcade Intelligence (Incremento 4)
 
 La migrazione congelata `0004` aggiunge CatalogSource, CatalogEntry, CatalogRun, GameInsight, ArcadeValidation, CatalogPreference, CoreBinding e SyncPresence, più FTS5 e trigger insert/delete. Game e Device esistenti restano invariati. La cronologia sync precedente viene adottata solo a parità di hash dei file.
