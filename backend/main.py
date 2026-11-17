@@ -16,6 +16,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from backend.acquisition import Acquisition
+from backend.acquisition_schemas import EnrichInput
 from backend.config import DATA, PLATFORMS, PROJECT
 from backend.db import Game, Job, Setting, make_engine, sessions
 from backend.exports import LocalTransport
@@ -44,6 +46,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     session_factory = sessions(engine)
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rlm-worker")
     mutation_lock = RLock()
+    acquisition = Acquisition(session_factory, data_dir, mutation_lock)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -60,14 +63,18 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
             for job in db.scalars(select(Job).where(Job.status.in_(["queued", "running"]))):
                 job.status = "failed"
                 job.error = "Operazione interrotta dal riavvio. Ripetere l'operazione."
+        acquisition.start()
         yield
+        acquisition.shutdown()
         executor.shutdown(wait=True)
         engine.dispose()
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.2.0", lifespan=lifespan)
     app.state.sessions = session_factory
+    app.state.acquisition = acquisition
+    app.include_router(acquisition.router)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     app.add_middleware(
         CORSMiddleware,
@@ -83,6 +90,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 return JSONResponse({"detail": "Header locale richiesto"}, status_code=403)
             origin = request.headers.get("origin")
             if origin and origin not in {
+                str(request.base_url).rstrip("/"),
                 "http://127.0.0.1:8000",
                 "http://localhost:8000",
                 "http://127.0.0.1:5173",
@@ -127,22 +135,21 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
             db.add(Job(id=job_id, kind=kind, status="queued"))
 
         def run():
-            with mutation_lock:
+            try:
                 with session_factory.begin() as db:
                     db.get(Job, job_id).status = "running"
-                try:
-                    result = operation()
-                    with session_factory.begin() as db:
-                        job = db.get(Job, job_id)
-                        job.result = result
-                        job.status = "completed"
-                    logger.info("Job %s %s completed", kind, job_id)
-                except Exception as exc:
-                    logger.exception("Job %s %s failed", kind, job_id)
-                    with session_factory.begin() as db:
-                        job = db.get(Job, job_id)
-                        job.status = "failed"
-                        job.error = str(exc)
+                result = operation()
+                with session_factory.begin() as db:
+                    job = db.get(Job, job_id)
+                    job.result = result
+                    job.status = "completed"
+                logger.info("Job %s %s completed", kind, job_id)
+            except Exception as exc:
+                logger.exception("Job %s %s failed", kind, job_id)
+                with session_factory.begin() as db:
+                    job = db.get(Job, job_id)
+                    job.status = "failed"
+                    job.error = str(exc)
 
         executor.submit(run)
         return {"id": job_id, "status": "queued"}
@@ -155,7 +162,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "0.1.0"}
+        return {"status": "ok", "version": "0.2.0"}
 
     @app.get("/api/platforms")
     def platforms():
@@ -233,7 +240,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     @app.put("/api/games/{game_id}")
     def edit_game(game_id: int, body: GamePatch):
         if body.cover_path:
-            cover = allowed(body.cover_path, settings()["import_roots"])
+            cover = allowed(body.cover_path, [*settings()["import_roots"], str(data_dir / "covers")])
             if (
                 cover.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}
                 or cover.stat().st_size > 20_000_000
@@ -242,6 +249,8 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         with mutation_lock, session_factory.begin() as db:
             game = require_game(db, game_id)
             for key, value in body.model_dump().items():
+                if key == "author" and key not in body.model_fields_set:
+                    continue
                 setattr(game, key, value)
             return serialize(game)
 
@@ -251,7 +260,9 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
             game = require_game(db, game_id)
             if not game.cover_path:
                 raise HTTPException(404, "Copertina assente")
-            return FileResponse(allowed(game.cover_path, settings()["import_roots"]))
+            return FileResponse(
+                allowed(game.cover_path, [*settings()["import_roots"], str(data_dir / "covers")])
+            )
 
     @app.post("/api/imports/scan", status_code=202)
     def start_scan(body: ScanInput):
@@ -269,7 +280,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     @app.post("/api/imports/{job_id}/commit", status_code=202)
     def commit_import(job_id: str, body: ImportInput):
         def operation():
-            with session_factory.begin() as db:
+            with mutation_lock, session_factory.begin() as db:
                 job = db.get(Job, job_id)
                 if not job or job.kind != "scan" or job.status != "completed":
                     raise ValueError("Anteprima non disponibile")
@@ -322,7 +333,11 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 selected = list(db.scalars(select(Game).where(Game.id.in_(body.game_ids)).order_by(Game.id)))
                 if len(selected) != len(set(body.game_ids)):
                     raise ValueError("La selezione contiene giochi inesistenti")
-                return LocalTransport().publish(selected, destination, body.dry_run)
+                result = LocalTransport().publish(selected, destination, body.dry_run)
+                capacity = acquisition.storage()
+                capacity["selection_fits_target"] = result["required_bytes"] <= capacity["usable_bytes"]
+                result["target_capacity"] = capacity
+                return result
 
         return submit("export", operation)
 
@@ -337,6 +352,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         with mutation_lock, session_factory.begin() as db:
             current = [p for p in providers() if p["id"] != body.id]
             db.merge(Setting(key="providers", value=[*current, body.model_dump()]))
+        acquisition.sync_manifests()
         return body
 
     @app.post("/api/providers/{provider_id}/download/{entry_id}", status_code=202)
@@ -353,7 +369,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         def operation():
             path = download(entry, data_dir / "downloads")
             item = candidate([path], path.parent, entry.platform)
-            with session_factory.begin() as db:
+            with mutation_lock, session_factory.begin() as db:
                 existing = db.scalar(select(Game).where(Game.sha256 == item["sha256"]))
                 if existing:
                     return {"game_id": existing.id, "duplicate": True}
@@ -367,6 +383,10 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 return {"game_id": game.id, "duplicate": False}
 
         return submit("download", operation)
+
+    @app.post("/api/metadata/enrich", status_code=202)
+    def enrich_metadata(body: EnrichInput):
+        return submit("metadata", lambda: acquisition.enrich(body))
 
     frontend = PROJECT / "frontend" / "dist"
     if frontend.exists():

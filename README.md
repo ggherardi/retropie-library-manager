@@ -14,7 +14,19 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
-## Incremento 1
+## Incremento 2 — Game Discovery e acquisizione
+
+Aprire **Game Discovery** e aggiornare GBDev, GBADev o NESDev dal pannello provider. I cataloghi sono disponibili offline dopo l'aggiornamento. Il primo aggiornamento legge solo metadati e può richiedere alcuni minuti. Selezionare giochi o tutti i risultati filtrati, preparare il riepilogo e confermare l'acquisizione. **Download Manager** mostra avanzamento, pausa, ripresa, retry e importazione finale.
+
+La modalità manuale è predefinita. La modalità automatica applica piattaforme, fonti, licenze, budget e deduplica configurati, quindi presenta un riepilogo da confermare. Ogni esecuzione richiede conferma. La coda già autorizzata viene conservata tra i riavvii. Un trasferimento interrotto durante il riavvio viene messo in pausa.
+
+La configurazione parte da 32 GB nominali, 8 GB riservati al sistema e 5% di margine filesystem. Capacità, riserva, margine e concorrenza sono modificabili, anche per una microSD da 128 GB. La capacità nominale viene inserita in GB decimali; i byte effettivi sono mostrati in KiB/MiB/GiB. Il riepilogo confronta la selezione con capacità utile, libreria, coda e spazio libero locale.
+
+L'arricchimento massivo confronta SHA-256 o l'identificatore Git del contenuto dei file singoli. Presenta corrispondenze certe e ambiguità, quindi completa i campi vuoti e le copertine autorizzate. Titoli, metadati e copertine possono essere corretti nel dettaglio del catalogo.
+
+Consultare la [guida ai provider](docs/PROVIDERS.md), la [guida ai download](docs/DOWNLOADS.md) e le [istruzioni Windows](docs/WINDOWS.md).
+
+## Funzionalità della libreria
 
 - Dashboard con conteggi, spazio, console e attività recenti.
 - Catalogo paginato a griglia e lista, ricerca, filtri console/regione/genere e preferiti.
@@ -51,7 +63,7 @@ La copia avviene in una cartella `.partial-<uuid>`, con verifica SHA-256 delle d
 
 ## Sorgenti e download
 
-Il provider incluso legge manifest configurati dall'utente. Il catalogo iniziale è vuoto. Per aggiungere una fonte usare **Sorgenti e download** e incollare un documento JSON conforme al seguente schema descrittivo.
+Tre provider inclusi leggono i metadati pubblici dei database GBDev, GBADev e NESDev. Il primo aggiornamento viene avviato dall’interfaccia. Il provider a manifest dell’Incremento 1 rimane disponibile per fonti configurate dall’utente. Per aggiungere una fonte usare **Sorgenti e download** e incollare un documento JSON conforme al seguente schema descrittivo.
 
 ```json
 {
@@ -81,11 +93,11 @@ Il repository contiene esclusivamente codice, documentazione e test con dati sin
 
 `data/` contiene SQLite, log con rotazione e download verificati. `RLM_DATA_DIR` permette di scegliere un'altra cartella dati. Arrestare l'app prima di copiare il database per un backup completo. Le ROM importate e le copertine rimangono nei percorsi originali e vanno incluse separatamente nel proprio backup. I percorsi dei file sono locali e vanno aggiornati con una nuova importazione se la libreria viene spostata.
 
-Le migrazioni si applicano all'avvio. Per applicarle manualmente dalla radice del progetto usare `.venv\Scripts\python.exe -m alembic upgrade head`. Avviare una sola istanza del server sul database. I lavori sono serializzati per mantenere prevedibile l'uso del disco e la consistenza delle importazioni.
+Le migrazioni si applicano all'avvio. Per applicarle manualmente dalla radice del progetto usare `.venv\Scripts\python.exe -m alembic upgrade head`. Avviare una sola istanza del server sul database. Scansioni e importazioni usano un worker dedicato. La coda di acquisizione usa da 1 a 8 trasferimenti concorrenti, con transazioni e un lock sulle modifiche condivise.
 
 ## Verifiche e sviluppo
 
-`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Prima della prima prova browser installare Chromium con `cd frontend` e `npx playwright install chromium`. I test usano esclusivamente file sintetici temporanei. Le prove E2E usano un database separato in `.runtime/e2e-data`.
+`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Prima della prima prova browser installare Chromium con `cd frontend` e `npx playwright install chromium`. I test usano esclusivamente file sintetici temporanei. Le prove E2E usano un database separato in `.runtime/e2e-data`, la porta 18001 e un trasporto HTTPS sintetico definito esclusivamente in `tests/e2e_app.py`. L’app avviata con Start.cmd usa il trasporto di rete reale.
 
 Per lo sviluppo avviare il backend con `.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`. In una seconda console, nella cartella `frontend`, eseguire `npm run dev`. Vite inoltra le chiamate API al backend.
 

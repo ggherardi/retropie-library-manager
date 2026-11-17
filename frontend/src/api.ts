@@ -1,6 +1,7 @@
 export type Game = {
   id: number;
   title: string;
+  author?: string;
   platform: string;
   region: string;
   year: number | null;
@@ -23,6 +24,7 @@ export type ScanResult = {
   scanned_files: number;
 };
 export type ExportResult = {
+  target_capacity?: { usable_bytes: number; selection_fits_target: boolean };
   required_bytes: number;
   free_bytes: number;
   destination?: string;
@@ -80,7 +82,7 @@ export async function api<T>(
 export function bytes(value: number): string {
   if (value < 1024) return `${value} B`;
   const unit = Math.min(Math.floor(Math.log(value) / Math.log(1024)), 4);
-  return `${(value / 1024 ** unit).toLocaleString("it-IT", { maximumFractionDigits: 1 })} ${["B", "KB", "MB", "GB", "TB"][unit]}`;
+  return `${(value / 1024 ** unit).toLocaleString("it-IT", { maximumFractionDigits: 1 })} ${["B", "KiB", "MiB", "GiB", "TiB"][unit]}`;
 }
 
 export async function waitForJob<T>(

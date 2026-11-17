@@ -1,33 +1,55 @@
 # Architettura
 
-## Componenti
+## Componenti della libreria
 
-La SPA React utilizza API JSON sullo stesso host. La build viene servita da FastAPI e include i font. Lo sviluppo Vite usa un proxy locale. Il client presenta stati di attesa, risultati ed errori, con polling dei lavori persistenti. Il catalogo usa paginazione lato server per mantenere limitato il numero di elementi renderizzati.
+La SPA React/TypeScript usa API JSON sullo stesso host. FastAPI serve anche la build e i font; Vite usa un proxy locale durante lo sviluppo. Il catalogo è paginato lato server. SQLite usa WAL, timeout e transazioni SQLAlchemy; Alembic conserva la storia dello schema.
 
-`backend/main.py` compone le route, la session factory, il ciclo di vita e la coda seriale dei lavori. `db.py` definisce Game, Setting e Job tramite SQLAlchemy 2. Alembic conserva la storia dello schema. SQLite usa WAL, timeout e transazioni. L'unicità dell'hash a livello di database protegge l'identità dei giochi. Le modifiche passano attraverso un lock di processo. L'installazione prevista usa un solo worker Uvicorn.
+`backend/main.py` compone route, session factory e lifecycle. Scansione, importazione ed esportazione usano una coda seriale Job. Un lock di processo protegge le modifiche condivise della libreria, senza trattenere le richieste di rete. L'installazione usa un solo worker Uvicorn.
 
-`scanner.py` enumera i percorsi, interpreta CUE/M3U, raggruppa i dischi e calcola gli hash a blocchi. Il candidato contiene tutti i file necessari con percorso assoluto, relativo, dimensione e SHA-256. L'identità dei file singoli è il loro hash. Per i gruppi è l'hash della lista ordinata di coppie percorso relativo/hash. Due gruppi con nomi interni differenti possono avere identità diverse anche a contenuti equivalenti. L'anteprima è un risultato Job persistente. Il commit ricontrolla ogni file selezionato in una transazione e salta gli hash già catalogati.
+`scanner.py` enumera i file, interpreta CUE/M3U, raggruppa dischi e calcola hash a blocchi. L'identità di un file è SHA-256; per i gruppi è l'hash delle coppie ordinate percorso relativo/hash. Gruppi con nomi interni diversi possono quindi avere identità diverse. Il commit ricontrolla gli originali e salta gli hash già catalogati.
 
-`exports.py` verifica gli originali e costruisce un manifest indipendente dal trasporto. `LocalTransport` calcola lo spazio, esegue la copia in staging, verifica gli hash delle copie e pubblica con una rinomina. Ogni esecuzione ha una destinazione univoca. Le playlist multidisco generate sono incluse nel calcolo dello spazio e nel manifest. `ExportTransport` descrive l'interfaccia prevista per un futuro trasporto SFTP.
+`exports.py` verifica gli originali e prepara un manifest indipendente dal trasporto. LocalTransport copia in staging, verifica le copie e pubblica con rinomina. Ogni destinazione è univoca. Playlist generate e manifest entrano nella stima dello spazio. ExportTransport definisce il contratto per il futuro SFTP. Il manifest conserva autore, licenza e provenienza.
 
-`providers.py` definisce il protocollo Provider e ManifestProvider. Le voci vengono validate tramite Pydantic, salvate nelle impostazioni SQLite e mostrate nell'interfaccia. Il downloader usa file parziali univoci, dimensione limite, hash richiesto e rinomina finale. Il download verificato viene importato automaticamente. I retry riutilizzano un download presente soltanto dopo averne verificato nuovamente dimensione e hash.
+`providers.py` conserva ManifestProvider e l'API dell'Incremento 1. I manifest esplicitamente configurati dall'operatore vengono validati tramite Pydantic e sincronizzati anche nel nuovo catalogo Discovery.
 
-## Sicurezza locale
+## Discovery e acquisizione
 
-- Binding loopback e verifica dell'header Host.
-- Header personalizzato obbligatorio sulle mutazioni, verifica Origin e CORS limitato alle porte locali di sviluppo.
-- Validazione Pydantic, limiti su stringhe, selezioni e paginazione, query SQLAlchemy parametrizzate.
-- Sorgenti configurate esplicitamente, percorsi assoluti canonicalizzati, controllo dei riferimenti interni, esclusione dei link simbolici durante l'enumerazione e verifica del contenimento dopo la risoluzione.
-- Copertine locali limitate a PNG/JPG/WebP, servite dal backend. CSP e protezione dal MIME sniffing sulle risposte.
-- Download HTTPS su indirizzi pubblici, senza credenziali, redirect o proxy impliciti. File destinazione generati dal server e hash/dimensione verificati prima dell'importazione.
-- Il manifest dei provider è una dichiarazione di fiducia configurata dall'operatore. L'autorizzazione legale del distributore deve essere accertata dall'operatore.
+`db.py` definisce Game, Setting, Job, DiscoveryEntry, ProviderState, DownloadPlan e DownloadTask. La migrazione 0002 aggiunge autore e tabelle di acquisizione conservando giochi e impostazioni. L'unicità SHA-256 nel database protegge l'identità della libreria.
 
-Il confine di fiducia è il computer locale. Un processo locale con accesso diretto al database o ai file può modificarli. Il servizio è progettato per uso personale con un singolo processo. Un'esposizione LAN richiederebbe autenticazione, TLS e un modello di autorizzazione dedicato.
+`discovery_sources.py` implementa GBDev, GBADev e NESDev. Git Trees fornisce revisione, percorsi, dimensioni e hash dei blob; i metadati sono letti da URL immutabili e memorizzati per hash. L'acquisizione richiede una licenza riconosciuta, assenza di esclusioni commerciali/disabilitazioni e un file supportato identificato senza ambiguità. I campi mancanti restano null. Ogni voce conserva fonte, dichiarazione di licenza, revisione e riferimenti di integrità. La licenza degli asset è valutata separatamente. itch.io e PDRoms sono collegamenti documentati alle fonti.
 
-## Errori, persistenza e recupero
+`network.py` concentra HTTPS pubblico, robots.txt, timeout, intervallo minimo per host, limiti di risposta e divieto di redirect/proxy impliciti. `acquisition.py` gestisce refresh asincroni, filtri, ricerca paginata, impostazioni, capacità e arricchimento. Un refresh fallito conserva la cache precedente e segnala l'errore.
 
-Le scansioni tollerano file non leggibili o descrittori incompleti e producono segnalazioni nell'anteprima. Le importazioni falliscono atomicamente quando un originale cambia tra scansione e commit. Le esportazioni ricontrollano gli hash prima e dopo la copia. I fallimenti dei lavori vengono salvati e registrati in log con rotazione. Al riavvio i lavori queued/running diventano failed per consentire un retry esplicito. Una terminazione forzata durante una copia può lasciare staging parziale, come documentato nel README.
+I piani persistenti contengono selezione e impronta delle impostazioni/fonti. La conferma esplicita è idempotente e ricontrolla disponibilità e capacità prima di creare task. Selezionare tutti i risultati filtrati opera sul server, oltre la pagina visibile. Salvare le regole automatiche non avvia download.
+
+`download_manager.py` esegue uno scheduler e un pool con limite configurabile da 1 a 8. Stati: queued, running, paused, retry_wait, verifying, downloaded, imported, failed, cancelled. Rete fuori dal lock; progressi, controlli e importazione usano transazioni brevi. La ripresa usa Range/If-Range, oppure ricomincia se il server restituisce tutto il file. Dimensione, SHA-256 dichiarato o hash Git vengono verificati; SHA-256 viene sempre calcolato per deduplicare. I file e le prove di autorizzazione risiedono in cartelle interne UUID. Gli ZIP sono ispezionati senza estrazione prima dell'importazione.
+
+L'arricchimento usa solo SHA-256 o hash Git verificati sul file locale, senza confronti per somiglianza del titolo. Le ambiguità vengono segnalate. La procedura completa campi vuoti e conserva le correzioni manuali. Copertine con autorizzazione esplicita vengono verificate, decodificate con limiti e ricodificate PNG nella cache.
+
+La capacità target parte da 32 GB nominali, riserva di 8 GB e margine del 5%; 128 GB e valori personalizzati sono configurabili. Il calcolo include libreria, coda e selezione. La conferma verifica anche il disco locale. L'esportazione confronta la propria stima con la capacità utile.
+
+Le API sono documentate con schemi in `/docs`: discovery, provider/refresh, piani/conferma, configurazione, coda/controlli, copertine e arricchimento. `frontend/src/Discovery.tsx` presenta questi flussi con dialogo accessibile, selezione multipla e polling della coda ogni 1,5 secondi.
+
+## Sicurezza e confine di fiducia
+
+- Binding loopback, header Host verificato, header personalizzato sulle mutazioni e controllo Origin/CORS.
+- Validazione Pydantic, query parametrizzate, limiti su selezioni, paginazione e stringhe.
+- Percorsi canonicalizzati, contenimento dopo risoluzione, esclusione di link simbolici e riferimenti esterni CUE/M3U.
+- Copertine servite da radici autorizzate, CSP e protezione MIME sniffing.
+- Download HTTPS pubblici senza credenziali, redirect o proxy ambientali; nomi generati/validati e integrità prima dell'importazione.
+- ZIP controllati per traversal, link, cifratura, CRC, numero di file, dimensione espansa e rapporto di compressione.
+- Manifest personalizzati come dichiarazione esplicita di fiducia dell'operatore, che verifica l'autorizzazione della fonte.
+
+Il confine di fiducia è il computer locale. Un processo con accesso diretto ai dati può modificarli. L'esposizione LAN richiederebbe autenticazione, TLS e autorizzazioni dedicate.
+
+## Persistenza e recupero
+
+Le scansioni segnalano file non leggibili/incompleti. Le importazioni falliscono atomicamente se gli originali cambiano. Le esportazioni verificano gli hash prima e dopo la copia. Errori e stati vengono persistiti e registrati con rotazione dei log.
+
+Al riavvio i Job locali queued/running diventano failed per un retry esplicito. I DownloadTask interrotti diventano paused; quelli già confermati ancora queued restano in coda. Gli errori transitori ritentano al massimo tre volte, con backoff e Retry-After. Annullare rimuove i file incompleti, mettere in pausa li conserva. Un arresto forzato durante un'esportazione può lasciare staging parziale, come documentato nel README.
 
 ## Verifica
 
-Pytest copre API, transazioni, deduplica, filtri e paginazione, multidisco e playlist, traversal, controllo degli origin, download e migrazioni. Vitest verifica il contratto del client HTTP e la propagazione degli errori. Playwright attraversa impostazioni, scansione, importazione, modifica, preferiti, viste, dry-run ed esportazione tramite il browser e verifica il layout mobile. Ruff, mypy, ESLint e TypeScript completano i controlli statici.
+Pytest copre API, transazioni, filtri, deduplica, multidisco, traversal, origin, migrazioni, parsing/licenze, corruzione, retry, Range, riavvio, concorrenza, budget, matching e copertine. Vitest verifica client HTTP e formattazione. Playwright attraversa i flussi dell'Incremento 1 e selezione manuale/automatica, conferma, pausa/ripresa, importazione e layout mobile.
+
+Il server E2E usa file sintetici e trasporto HTTP di test in una directory separata. Ruff, mypy, ESLint e TypeScript completano i controlli statici. Le prove live sono documentate in PROVIDERS.md, distinguendo scansioni di metadati e download effettivi.

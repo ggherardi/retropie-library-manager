@@ -50,6 +50,8 @@ class LocalTransport:
                     "launch": launch,
                     "files": records,
                     "license": game.license,
+                    "provenance": game.provenance,
+                    "author": game.author,
                 }
             )
         manifest["total_bytes"] = sum(f["size"] for g in manifest["games"] for f in g["files"]) + sum(

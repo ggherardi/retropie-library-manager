@@ -1,3 +1,4 @@
+import Discovery from "./Discovery";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowDownToLine,
@@ -31,6 +32,8 @@ import {
 } from "./api";
 
 type Page =
+  | "Game Discovery"
+  | "Download Manager"
   | "Dashboard"
   | "Catalogo"
   | "Preferiti"
@@ -47,6 +50,8 @@ type Stats = {
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Catalogo", icon: Library },
+  { label: "Game Discovery", icon: Search },
+  { label: "Download Manager", icon: ArrowDownToLine },
   { label: "Preferiti", icon: Heart },
   { label: "Importazione", icon: FolderInput },
   { label: "Sorgenti e download", icon: ArrowDownToLine },
@@ -439,7 +444,9 @@ export default function App() {
                           ? "Prepara la prossima sessione sul tuo Raspberry Pi."
                           : page === "Impostazioni"
                             ? "Le cartelle e le preferenze della tua libreria."
-                            : "Gestisci i cataloghi di giochi distribuibili legalmente."}
+                            : page === "Download Manager"
+                              ? "Segui avanzamento, verifiche e importazioni della tua coda."
+                              : "Gestisci i cataloghi di giochi distribuibili legalmente."}
               </p>
             </div>
             {["Dashboard", "Catalogo", "Preferiti"].includes(page) && (
@@ -574,7 +581,14 @@ export default function App() {
                           )[j.kind]
                         }
                       </span>
-                      <span className={`status ${j.status}`}>{{ completed: "Completata", failed: "Fallita", queued: "In coda", running: "In corso" }[j.status] ?? j.status}</span>
+                      <span className={`status ${j.status}`}>
+                        {{
+                          completed: "Completata",
+                          failed: "Fallita",
+                          queued: "In coda",
+                          running: "In corso",
+                        }[j.status] ?? j.status}
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -586,6 +600,14 @@ export default function App() {
             </>
           )}
           {(page === "Catalogo" || page === "Preferiti") && catalog}
+          {(page === "Game Discovery" || page === "Download Manager") && (
+            <Discovery
+              view={page === "Game Discovery" ? "discovery" : "downloads"}
+              platforms={platforms}
+              onDownloads={() => navigate("Download Manager")}
+              onChanged={refresh}
+            />
+          )}
           {page === "Importazione" && (
             <>
               <section className="panel">
@@ -913,6 +935,20 @@ export default function App() {
                       <strong>{bytes(exportResult.free_bytes)}</strong>
                     </div>
                   </div>
+                  {exportResult.target_capacity && (
+                    <p
+                      className={
+                        exportResult.target_capacity.selection_fits_target
+                          ? "muted"
+                          : "error-text"
+                      }
+                    >
+                      Capacità RetroPie utile ·{" "}
+                      {bytes(exportResult.target_capacity.usable_bytes)}
+                      {!exportResult.target_capacity.selection_fits_target &&
+                        " — Attenzione, la selezione supera la capacità target."}
+                    </p>
+                  )}
                   <p className="success-text">
                     {exportResult.dry_run
                       ? "Integrità verificata. La selezione è pronta per essere copiata."
@@ -1007,21 +1043,10 @@ export default function App() {
                         </div>
                         <button
                           disabled={!!busy}
-                          onClick={() =>
-                            void action("Download", async () => {
-                              await job(
-                                `/providers/${p.id}/download/${e.id}`,
-                                undefined,
-                                "Download",
-                              );
-                              setNotice(
-                                "Download verificato e aggiunto al catalogo.",
-                              );
-                            })
-                          }
+                          onClick={() => navigate("Game Discovery")}
                         >
                           <ArrowDownToLine size={17} />
-                          Scarica
+                          Apri in Discovery
                         </button>
                       </div>
                     ))
@@ -1034,8 +1059,7 @@ export default function App() {
           )}
         </div>
         <footer>
-          RetroPie Library Manager{" "}
-          <span>Incremento 1 · Archivio personale</span>
+          RetroPie Library Manager <span>Incremento 2 · Game Discovery</span>
         </footer>
       </main>
       {detail && (
@@ -1066,6 +1090,7 @@ export default function App() {
                 void action("Salvataggio gioco", async () => {
                   const {
                     title,
+                    author,
                     region,
                     year,
                     genre,
@@ -1077,6 +1102,7 @@ export default function App() {
                   } = detail;
                   await api(`/games/${detail.id}`, "PUT", {
                     title,
+                    author,
                     region,
                     year,
                     genre,
@@ -1128,6 +1154,15 @@ export default function App() {
                   />
                 </label>
               </div>
+              <label>
+                Autore
+                <input
+                  value={detail.author || ""}
+                  onChange={(e) =>
+                    setDetail({ ...detail, author: e.target.value })
+                  }
+                />
+              </label>
               <label>
                 Genere
                 <input

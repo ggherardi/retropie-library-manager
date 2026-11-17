@@ -25,30 +25,26 @@ describe("local API client", () => {
   it("surfaces server validation failures", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          json: async () => ({ detail: "Percorso non valido" }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ detail: "Percorso non valido" }),
+      }),
     );
     await expect(api("/settings")).rejects.toThrow("Percorso non valido");
   });
   it("surfaces failed jobs instead of claiming completion", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({ status: "failed", error: "Hash errato" }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: "failed", error: "Hash errato" }),
+      }),
     );
     await expect(waitForJob("test", vi.fn())).rejects.toThrow("Hash errato");
   });
   it("formats storage amounts including zero", () => {
     expect(bytes(0)).toBe("0 B");
-    expect(bytes(1024)).toBe("1 KB");
-    expect(bytes(1024 ** 3)).toBe("1 GB");
+    expect(bytes(1024)).toBe("1 KiB");
+    expect(bytes(1024 ** 3)).toBe("1 GiB");
   });
 });
