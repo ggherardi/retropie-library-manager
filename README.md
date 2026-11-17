@@ -14,6 +14,18 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 3 — Raspberry Pi e sincronizzazione
+
+In **Dispositivi**, registra hostname/IP, porta, utente e directory RetroPie. Verifica la fingerprint SSH, apri l'assistente Ed25519 e inserisci la password soltanto nel terminale OpenSSH di Windows. Il test successivo verifica accesso con chiave, SFTP, hardware, versioni disponibili, temperatura, RAM, permessi e spazio reale.
+
+Seleziona giochi dal Catalogo oppure dalla pagina **Sincronizzazione**, scegli il Raspberry e prepara il dry-run. L'anteprima mostra file nuovi, identici e differenti, copertine e gamelist, spazio richiesto e margine libero minimo. Conferma i diritti sui contenuti e avvia. I file differenti sono bloccati; i giochi completi vengono pubblicati atomicamente dopo SHA-256. Sono disponibili avanzamento, annullamento, retry e report persistenti.
+
+Il margine iniziale è 1 GB sullo spazio effettivo del Raspberry. La capacità nominale 32/128 GB dell'Incremento 2 resta una stima per esportazioni; la sincronizzazione legge il filesystem remoto. I BIOS non vengono trasferiti.
+
+EmulationStation attiva comporta il rinvio della scrittura dei gamelist. L'app non interrompe o riavvia il frontend: dopo averlo chiuso, ripetere il dry-run completa soltanto i metadati mancanti. I file esistenti vengono uniti conservando campi non gestiti e creando un backup verificato. Le versioni CHD richiedono conferma della compatibilità del core PS1 oltre al controllo delle estensioni configurate.
+
+Guide: [SSH](docs/SSH.md), [sincronizzazione](docs/SYNC.md), [diagnostica](docs/RASPBERRY.md), [risoluzione problemi](docs/TROUBLESHOOTING.md), [collaudo](docs/VALIDATION-INCREMENT3.md).
+
 ## Incremento 2 — Game Discovery e acquisizione
 
 Aprire **Game Discovery** e aggiornare GBDev, GBADev o NESDev dal pannello provider. I cataloghi sono disponibili offline dopo l'aggiornamento. Il primo aggiornamento legge solo metadati e può richiedere alcuni minuti. Selezionare giochi o tutti i risultati filtrati, preparare il riepilogo e confermare l'acquisizione. **Download Manager** mostra avanzamento, pausa, ripresa, retry e importazione finale.
@@ -34,7 +46,7 @@ Consultare la [guida ai provider](docs/PROVIDERS.md), la [guida ai download](doc
 - Scansione ricorsiva in background, anteprime persistenti, selezione dei candidati e duplicati identificati tramite SHA-256. Le copie identiche vengono saltate anche nelle importazioni ripetute.
 - PS1 BIN/CUE, più tracce, playlist M3U e raggruppamento di dischi con nomi `(Disc 1)`, `(Disk 2)` o `(CD 3)` e corrispondenti varianti tra parentesi quadre. L'esportazione genera un M3U per i gruppi riconosciuti automaticamente.
 - Provider modulari con manifest JSON locale, download HTTPS esplicitamente autorizzati, verifica di dimensione e SHA-256, importazione del risultato nel catalogo.
-- Selezione di giochi nel catalogo, calcolo dello spazio, dry-run ed esportazione verificata in cartelle RetroPie, con manifest JSON. Il trasporto locale implementa un contratto riutilizzabile per una futura sincronizzazione SFTP.
+- Selezione di giochi nel catalogo, calcolo dello spazio, dry-run ed esportazione verificata in cartelle RetroPie, con manifest JSON. Esportazione locale e sincronizzazione SFTP condividono la preparazione del manifest verificato.
 
 ## Console e formati
 

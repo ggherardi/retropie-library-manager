@@ -35,6 +35,7 @@ class ImportInput(Input):
 class GamePatch(Input):
     title: str = Field(min_length=1, max_length=300)
     author: str = Field(default="", max_length=500)
+    publisher: str = Field(default="", max_length=500)
     region: str = Field(default="Sconosciuta", max_length=80)
     year: int | None = Field(default=None, ge=1970, le=2100)
     genre: str = Field(default="", max_length=120)

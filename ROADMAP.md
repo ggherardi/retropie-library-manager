@@ -8,17 +8,14 @@ Catalogo, dashboard, importazione con anteprima e deduplica, PS1 multidisco, man
 
 Cataloghi reali GBDev/GBADev/NESDev, ricerca e filtri, selezione multipla, prove delle autorizzazioni, regole automatiche con conferma, coda persistente concorrente con pausa/ripresa/retry, verifica e importazione, deduplica SHA-256, copertine autorizzate, arricchimento conservativo e capacità target 32/128 GB. itch.io e PDRoms restano collegamenti alle fonti: non è stato accertato un accesso automatico anonimo utilizzabile nel progetto. Incluse guide, test backend/browser e verifica live dei provider.
 
-## Incremento 3 proposto — Sincronizzazione RetroPie
+## Incremento 3 — Raspberry Pi e SSH/SFTP
 
-- SSH/SFTP con verifica host key e credenziali nel credential store Windows.
-- Inventario remoto, confronto con manifest, anteprima delle differenze e conferma delle operazioni.
-- Spazio effettivo sul Raspberry Pi, trasferimenti riprendibili, verifica hash, pubblicazione atomica e report.
-- Generazione gamelist.xml, copertine e metadati EmulationStation con percorsi relativi e corretta codifica XML.
-- Prove su Raspberry Pi 3 B+ e microSD 32/128 GB; verifica core e versioni dei romset Arcade/Neo Geo.
-- Politica di conflitto e backup esplicita; nessuna cancellazione remota implicita.
+Dispositivi multipli e predefinito, assistente Ed25519 e fingerprint, diagnostica reale, sincronizzazione incrementale con dry-run/conferma, gruppi atomici PS1, SHA-256, annullamento/retry, capacità effettiva, gamelist con backup e preservazione dei metadati, copertine locali autorizzate, test automatici e collaudo sul Raspberry. Nessun aggiornamento del sistema o trasferimento BIOS. I risultati e i limiti del collaudo sono in docs/VALIDATION-INCREMENT3.md.
 
-## Incremento 4 — Fonti e qualità del catalogo
+## Incremento 4 proposto — Qualità, compatibilità e recupero
 
+- Revisione guidata dei conflitti remoti, ripristino dei backup gamelist e adozione dei giochi già presenti fuori dalle directory RLM.
+- Profili verificati per core PS1/Arcade, collaudi di avvio concordati e librerie grandi su microSD 128 GB.
 - Provider SNES, Mega Drive, Master System, Neo Geo/Arcade con API e autorizzazioni verificabili; oggi supportati tramite importazione locale o manifest dell'operatore.
 - Nuove fonti di metadati e immagini autorizzate, mantenendo il matching conservativo.
 - Percorsi spostati, reindicizzazione, raccolte e modifica massiva con anteprima.

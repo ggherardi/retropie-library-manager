@@ -8,7 +8,7 @@ La SPA React/TypeScript usa API JSON sullo stesso host. FastAPI serve anche la b
 
 `scanner.py` enumera i file, interpreta CUE/M3U, raggruppa dischi e calcola hash a blocchi. L'identità di un file è SHA-256; per i gruppi è l'hash delle coppie ordinate percorso relativo/hash. Gruppi con nomi interni diversi possono quindi avere identità diverse. Il commit ricontrolla gli originali e salta gli hash già catalogati.
 
-`exports.py` verifica gli originali e prepara un manifest indipendente dal trasporto. LocalTransport copia in staging, verifica le copie e pubblica con rinomina. Ogni destinazione è univoca. Playlist generate e manifest entrano nella stima dello spazio. ExportTransport definisce il contratto per il futuro SFTP. Il manifest conserva autore, licenza e provenienza.
+`exports.py` verifica gli originali e prepara un manifest indipendente dal trasporto. LocalTransport copia in staging, verifica le copie e pubblica con rinomina. Ogni destinazione è univoca. Playlist generate e manifest entrano nella stima dello spazio. ExportTransport descrive la pubblicazione locale; il servizio SFTP riutilizza prepare_games aggiungendo piano, conferma e coda persistente. Il manifest conserva autore, licenza e provenienza.
 
 `providers.py` conserva ManifestProvider e l'API dell'Incremento 1. I manifest esplicitamente configurati dall'operatore vengono validati tramite Pydantic e sincronizzati anche nel nuovo catalogo Discovery.
 
@@ -53,3 +53,22 @@ Al riavvio i Job locali queued/running diventano failed per un retry esplicito. 
 Pytest copre API, transazioni, filtri, deduplica, multidisco, traversal, origin, migrazioni, parsing/licenze, corruzione, retry, Range, riavvio, concorrenza, budget, matching e copertine. Vitest verifica client HTTP e formattazione. Playwright attraversa i flussi dell'Incremento 1 e selezione manuale/automatica, conferma, pausa/ripresa, importazione e layout mobile.
 
 Il server E2E usa file sintetici e trasporto HTTP di test in una directory separata. Ruff, mypy, ESLint e TypeScript completano i controlli statici. Le prove live sono documentate in PROVIDERS.md, distinguendo scansioni di metadati e download effettivi.
+
+
+## Integrazione Raspberry Pi (Incremento 3)
+
+La migrazione 0003 aggiunge Publisher al catalogo e le tabelle Device e SyncRun. Device conserva configurazione pubblica, fingerprint, ultimo stato e diagnostica. SyncRun conserva anteprima, conferma dei diritti, progressi, errori e report. Password e chiavi private non entrano in SQLite. Le migrazioni 0001/0002 restano compatibili.
+
+`ssh_connection.py` gestisce chiave Ed25519 nel profilo locale Windows, ACL dell'utente, known_hosts dedicato e connessioni Paramiko con RejectPolicy. Il probe limita l'handshake a host key Ed25519 e rifiuta una chiave differente da quelle note. Una fingerprint nuova richiede conferma esplicita. `ssh_setup.py` apre una console OpenSSH separata per l'autenticazione interattiva, verifica proprietà e symlink di .ssh/authorized_keys, crea un backup e aggiunge la sola chiave pubblica. Il login con chiave viene verificato senza disabilitare le password.
+
+`remote_fs.py` separa percorsi SFTP da comandi remoti. I comandi diagnostici sono costanti; parametri variabili passano come JSON base64 a un interprete Python 3 fisso. Le mutazioni SFTP controllano radici autorizzate e ogni componente contro symlink/traversal. La cartella ~/.emulationstation viene risolta nella diagnostica e il percorso canonico è ammesso solo sotto la home o /opt/retropie/configs.
+
+`exports.prepare_games` è condiviso con l'esportazione locale: rilegge dimensioni/hash e genera le playlist senza modificare gli originali. La sincronizzazione usa cartelle stabili per hash di gioco, mantenendo una directory separata per ogni insieme BIN/CUE/M3U. `sync_engine.py` confronta gli SHA-256 via SFTP, prepara i gruppi, individua i gamelist secondo es_systems.cfg e il percorso utente effettivo, stima spazio e rileva conflitti.
+
+Ogni gruppo nuovo viene caricato in una directory nascosta legata al run, verificato integralmente e rinominato nella destinazione finale. Un gruppo già completo e identico è saltato; uno differente o incompleto è bloccato. I parziali interrotti sono riutilizzati solo dopo confronto del prefisso; il risultato completo viene sempre verificato. L'annullamento pulisce lo staging noto di quel run, conservando i gruppi già pubblicati. Una disconnessione può lasciare parziali da recuperare al retry.
+
+`gamelist.py` usa un parser XML senza DTD/entità e conserva elementi, attributi, commenti, cartelle e metadati sconosciuti. I campi locali gestiti aggiornano la voce corrispondente; valori mancanti non cancellano informazioni remote. Prima della pubblicazione si ricontrolla l'hash osservato nel dry-run e si verifica un backup. La sostituzione usa l'estensione OpenSSH posix-rename; non c'è un fallback non atomico. Se EmulationStation è attiva, i gamelist restano rinviati nel report.
+
+`devices.py` espone API /devices e /sync, usa i Job esistenti per la diagnostica e un worker dedicato seriale per anteprime/trasferimenti. Retry di rete limitati a tre tentativi con backoff. Errori di identità o autenticazione non comportano downgrade. Al riavvio le operazioni interrotte richiedono retry esplicito. Le modifiche di configurazione vengono rilevate prima di usare un piano precedente.
+
+`Devices.tsx` aggiunge gestione connessioni, assistente SSH, diagnostica e pagina di sincronizzazione con selezione paginata, anteprima, conferma, copertine e report. I progressi sono aggiornati ogni 800 ms. I test browser iniettano esclusivamente nel server di test un doppio SFTP locale; il servizio normale usa Paramiko reale.

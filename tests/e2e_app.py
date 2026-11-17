@@ -4,7 +4,10 @@ import time
 from urllib.parse import unquote
 
 import httpx
+from remote_fixture import FakeConnection
 
+import backend.devices as device_module
+from backend.config import DATA
 from backend.main import create_app
 
 
@@ -40,3 +43,24 @@ def fixture_only(url):
 
 
 http.check = fixture_only
+
+
+# SSH/SFTP tests use an isolated local protocol double and never contact a Raspberry.
+
+remote = FakeConnection(DATA / "ssh-fixture")
+
+
+def synthetic_device(config):
+    if config["host"] != "test-pi.invalid":
+        raise ValueError("E2E SSH only permits the synthetic test device")
+    return remote
+
+
+def synthetic_probe(host, port):
+    synthetic_device({"host": host})
+    return {"fingerprint": "SHA256:" + "A" * 43, "previously_trusted": True}
+
+
+app.state.devices.connect = synthetic_device
+device_module.probe = synthetic_probe
+device_module.trust = lambda host, port, expected: synthetic_probe(host, port)

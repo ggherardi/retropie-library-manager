@@ -1,3 +1,4 @@
+import Devices from "./Devices";
 import Discovery from "./Discovery";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -32,6 +33,8 @@ import {
 } from "./api";
 
 type Page =
+  | "Dispositivi"
+  | "Sincronizzazione"
   | "Game Discovery"
   | "Download Manager"
   | "Dashboard"
@@ -56,6 +59,8 @@ const navigation = [
   { label: "Importazione", icon: FolderInput },
   { label: "Sorgenti e download", icon: ArrowDownToLine },
   { label: "Esportazione", icon: HardDrive },
+  { label: "Dispositivi", icon: HardDrive },
+  { label: "Sincronizzazione", icon: ArrowDownToLine },
   { label: "Impostazioni", icon: Settings2 },
 ] as const;
 
@@ -334,6 +339,11 @@ export default function App() {
           </button>
         )}
       </div>
+      {selected.length > 0 && (
+        <button onClick={() => navigate("Sincronizzazione")}>
+          Sincronizza sul Raspberry ({selected.length})
+        </button>
+      )}
       {loading ? (
         <div className="empty">
           <LoaderCircle className="spin" />
@@ -444,9 +454,13 @@ export default function App() {
                           ? "Prepara la prossima sessione sul tuo Raspberry Pi."
                           : page === "Impostazioni"
                             ? "Le cartelle e le preferenze della tua libreria."
-                            : page === "Download Manager"
-                              ? "Segui avanzamento, verifiche e importazioni della tua coda."
-                              : "Gestisci i cataloghi di giochi distribuibili legalmente."}
+                            : page === "Dispositivi"
+                              ? "Collega il tuo Raspberry e controllane lo stato."
+                              : page === "Sincronizzazione"
+                                ? "Confronta la libreria e trasferisci i giochi sul Raspberry."
+                                : page === "Download Manager"
+                                  ? "Segui avanzamento, verifiche e importazioni della tua coda."
+                                  : "Gestisci i cataloghi di giochi distribuibili legalmente."}
               </p>
             </div>
             {["Dashboard", "Catalogo", "Preferiti"].includes(page) && (
@@ -577,6 +591,8 @@ export default function App() {
                               import: "Importazione",
                               export: "Esportazione",
                               download: "Download",
+                              diagnostics: "Diagnostica Raspberry",
+                              metadata: "Arricchimento metadati",
                             } as Record<string, string>
                           )[j.kind]
                         }
@@ -606,6 +622,14 @@ export default function App() {
               platforms={platforms}
               onDownloads={() => navigate("Download Manager")}
               onChanged={refresh}
+            />
+          )}
+          {(page === "Dispositivi" || page === "Sincronizzazione") && (
+            <Devices
+              view={page === "Dispositivi" ? "devices" : "sync"}
+              selected={selected}
+              onSelect={setSelected}
+              onCatalog={() => navigate("Catalogo")}
             />
           )}
           {page === "Importazione" && (
@@ -885,6 +909,11 @@ export default function App() {
             </section>
           )}
           {page === "Esportazione" && (
+            <button onClick={() => navigate("Sincronizzazione")}>
+              Sincronizza questa selezione sul Raspberry
+            </button>
+          )}
+          {page === "Esportazione" && (
             <section className="panel">
               <h2>Prepara la selezione</h2>
               <p>{selected.length} giochi selezionati nel catalogo.</p>
@@ -1059,7 +1088,7 @@ export default function App() {
           )}
         </div>
         <footer>
-          RetroPie Library Manager <span>Incremento 2 · Game Discovery</span>
+          RetroPie Library Manager <span>Incremento 3 · Raspberry Pi</span>
         </footer>
       </main>
       {detail && (
@@ -1091,6 +1120,7 @@ export default function App() {
                   const {
                     title,
                     author,
+                    publisher,
                     region,
                     year,
                     genre,
@@ -1103,6 +1133,7 @@ export default function App() {
                   await api(`/games/${detail.id}`, "PUT", {
                     title,
                     author,
+                    publisher,
                     region,
                     year,
                     genre,
@@ -1160,6 +1191,15 @@ export default function App() {
                   value={detail.author || ""}
                   onChange={(e) =>
                     setDetail({ ...detail, author: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Publisher
+                <input
+                  value={detail.publisher || ""}
+                  onChange={(e) =>
+                    setDetail({ ...detail, publisher: e.target.value })
                   }
                 />
               </label>

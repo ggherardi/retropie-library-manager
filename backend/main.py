@@ -20,6 +20,7 @@ from backend.acquisition import Acquisition
 from backend.acquisition_schemas import EnrichInput
 from backend.config import DATA, PLATFORMS, PROJECT
 from backend.db import Game, Job, Setting, make_engine, sessions
+from backend.devices import DeviceService
 from backend.exports import LocalTransport
 from backend.paths import allowed, digest, local_path
 from backend.providers import ManifestProvider, download
@@ -47,6 +48,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rlm-worker")
     mutation_lock = RLock()
     acquisition = Acquisition(session_factory, data_dir, mutation_lock)
+    devices = DeviceService(session_factory, mutation_lock)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -64,16 +66,19 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 job.status = "failed"
                 job.error = "Operazione interrotta dal riavvio. Ripetere l'operazione."
         acquisition.start()
+        devices.start()
         yield
+        devices.shutdown()
         acquisition.shutdown()
         executor.shutdown(wait=True)
         engine.dispose()
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.3.0", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
+    app.state.devices = devices
     app.include_router(acquisition.router)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     app.add_middleware(
@@ -162,7 +167,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "0.2.0"}
+        return {"status": "ok", "version": "0.3.0"}
 
     @app.get("/api/platforms")
     def platforms():
@@ -249,7 +254,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         with mutation_lock, session_factory.begin() as db:
             game = require_game(db, game_id)
             for key, value in body.model_dump().items():
-                if key == "author" and key not in body.model_fields_set:
+                if key in {"author", "publisher"} and key not in body.model_fields_set:
                     continue
                 setattr(game, key, value)
             return serialize(game)
@@ -387,6 +392,8 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     @app.post("/api/metadata/enrich", status_code=202)
     def enrich_metadata(body: EnrichInput):
         return submit("metadata", lambda: acquisition.enrich(body))
+
+    app.include_router(devices.routes(submit))
 
     frontend = PROJECT / "frontend" / "dist"
     if frontend.exists():

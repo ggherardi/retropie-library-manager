@@ -20,6 +20,7 @@ class Game(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(300), index=True)
     author: Mapped[str] = mapped_column(String(500), default="")
+    publisher: Mapped[str] = mapped_column(String(500), default="")
     platform: Mapped[str] = mapped_column(String(30), index=True)
     region: Mapped[str] = mapped_column(String(80), default="Sconosciuta")
     year: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -108,6 +109,29 @@ class DownloadPlan(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON)
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     tasks: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Device(Base):
+    __tablename__ = "devices"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    config: Mapped[dict[str, Any]] = mapped_column(JSON)
+    fingerprint: Mapped[str] = mapped_column(String(100), default="")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(30), default="unknown")
+    diagnostics: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    error: Mapped[str] = mapped_column(Text, default="")
+
+
+class SyncRun(Base):
+    __tablename__ = "sync_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    device_id: Mapped[str] = mapped_column(String(36), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="preparing", index=True)
+    plan: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    progress: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    report: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    error: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 

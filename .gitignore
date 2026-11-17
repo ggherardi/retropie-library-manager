@@ -38,3 +38,11 @@ test-results/
 
 *.egg-info/
 *.tsbuildinfo
+
+# SSH identities and host inventories belong outside the repository
+id_ed25519*
+id_rsa*
+known_hosts*
+authorized_keys*
+*.pem
+*.key

@@ -2,6 +2,7 @@ export type Game = {
   id: number;
   title: string;
   author?: string;
+  publisher?: string;
   platform: string;
   region: string;
   year: number | null;
