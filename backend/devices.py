@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
 
@@ -12,7 +13,7 @@ from sqlalchemy import select
 
 from backend.acquisition import fingerprint, record
 from backend.config import PROJECT
-from backend.db import Device, Game, SyncRun
+from backend.db import Device, Game, SyncPresence, SyncRun
 from backend.remote_fs import diagnostics
 from backend.ssh_connection import SSHConnection, ensure_key, probe, trust
 from backend.sync_engine import SyncCancelled, build_plan, perform_sync
@@ -29,6 +30,7 @@ class DeviceService:
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sftp-sync")
         self.stop = threading.Event()
         self.connect = SSHConnection
+        self.game_guard: Callable[..., list] = lambda games, config, connection: []
 
     def start(self):
         with self.sessions.begin() as db:
@@ -83,7 +85,9 @@ class DeviceService:
                     if len(games) != len(set(body.game_ids)):
                         raise ValueError("La selezione contiene giochi non trovati")
                 with self.connect(config) as connection:
+                    arcade = self.game_guard(games, {**config, "device_id": body.device_id}, connection)
                     plan = build_plan(connection, config, games, body)
+                    plan["arcade"] = arcade
                 plan["device_fingerprint"] = fingerprint(config)
                 with self.sessions.begin() as db:
                     run = db.get(SyncRun, run_id)
@@ -130,6 +134,13 @@ class DeviceService:
                 if fingerprint(current) != plan["device_fingerprint"]:
                     raise ValueError("Configurazione cambiata: preparare una nuova anteprima")
                 with self.connect(current) as connection:
+                    with self.sessions() as db:
+                        selected = list(
+                            db.scalars(select(Game).where(Game.id.in_([g["id"] for g in plan["groups"]])))
+                        )
+                    arcade = self.game_guard(selected, {**current, "device_id": device_id}, connection)
+                    if fingerprint(arcade) != fingerprint(plan.get("arcade", [])):
+                        raise ValueError("Compatibilità arcade cambiata dopo il dry-run")
                     result = perform_sync(
                         connection,
                         plan,
@@ -143,6 +154,19 @@ class DeviceService:
                     run.status = "completed"
                     run.report = result
                     run.error = ""
+                    for group in plan["groups"]:
+                        game = db.get(Game, group["id"])
+                        if game:
+                            presence = db.scalar(
+                                select(SyncPresence).where(
+                                    SyncPresence.game_id == game.id, SyncPresence.device_id == device_id
+                                )
+                            )
+                            if not presence:
+                                presence = SyncPresence(game_id=game.id, device_id=device_id)
+                                db.add(presence)
+                            presence.sha256 = game.sha256
+                            presence.run_id = run_id
                 try:
                     self.diagnose(device_id)
                 except Exception:

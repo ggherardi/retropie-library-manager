@@ -19,9 +19,11 @@ def prepare_games(games: list[Game], stable=False):
     copies = []
     generated = []
     for game in games:
-        folder = f"{game.platform}/rlm-{game.sha256[:24]}" if stable else f"{game.platform}/game-{game.id}"
+        platform = getattr(game, "_export_platform", game.platform)
+        folder = f"{platform}/rlm-{game.sha256[:24]}" if stable else f"{platform}/game-{game.id}"
+        game_files = getattr(game, "_arcade_files", game.files)
         records = []
-        for file in game.files:
+        for file in game_files:
             source = local_path(file["path"])
             if source.stat().st_size != file["size"] or digest(source) != file["sha256"]:
                 raise ValueError(f"File modificato dopo l'importazione: {source.name}")
@@ -31,7 +33,7 @@ def prepare_games(games: list[Game], stable=False):
             target = f"{folder}/{relative.as_posix()}"
             records.append({"path": target, "size": file["size"], "sha256": file["sha256"]})
             copies.append((source, target, file["sha256"]))
-        launch = f"{folder}/{game.files[0]['relative']}"
+        launch = f"{folder}/{game_files[0]['relative']}"
         if game.format == "multidisc":
             entries = [
                 f["relative"]
@@ -45,7 +47,8 @@ def prepare_games(games: list[Game], stable=False):
             {
                 "id": game.id,
                 "title": game.title,
-                "platform": game.platform,
+                "platform": platform,
+                "arcade": getattr(game, "_arcade_report", None),
                 "launch": launch,
                 "files": records,
                 "license": game.license,

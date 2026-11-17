@@ -14,6 +14,23 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 4 — Cataloghi massivi e Arcade Intelligence
+
+**Piattaforme**, **Arcade**, **Neo Geo**, **Cataloghi DAT** e **Raccolte** distinguono metadati, famiglie parent/clone, file presenti, download autorizzati, set verificati e test di gioco riferiti dall'operatore. Il collaudo include oltre 10.000 record reali e 3.000 file sintetici; i numeri effettivi e i limiti sono nel [rapporto di verifica](docs/VALIDATION-INCREMENT4.md).
+
+- Importazione DAT ClrMamePro, XML MAME, JSON e CSV in streaming, aggiornamenti per ID, deduplica, staging atomico, attività annullabili e ricerca SQLite FTS5 paginata.
+- Acquisizione **solo metadati** dei DAT ufficiali MAME 0.78 e FBNeo della revisione installata; classificazione CPS-1/2/3 e Neo Geo dai driver originali, senza confronti approssimativi dei titoli.
+- Verifica ZIP/7z per nome, dimensione e hash dei componenti; parent, clone, BIOS, dipendenze e organizzazioni split/merged/non-merged/full-non-merged. Gli archivi restano intatti.
+- Rilevamento in lettura di versione/hash core, configurazioni per sistema/gioco, BIOS e sessione locale EmulationStation. Un DAT recente non sostituisce automaticamente quello del core installato.
+- Dry-run/export bloccati per set incompleti o non validati. Prima di sincronizzare: corrispondenza DAT/core, configurazione effettiva, hash delle dipendenze e BIOS richiesti.
+- Raccolte, variante preferita, arricchimento massivo con anteprima, screenshot locali autorizzati ed evidenze di test legate all'hash del file.
+- Nuovo provider con **due singoli homebrew verificati** per SNES e Mega Drive. Download multipli con conferma, filtri, budget, ripresa e report JSON riutilizzano il Download Manager.
+- Scansioni locali con avanzamento e annullamento; preservazione della libreria e della cronologia di sincronizzazione degli incrementi precedenti.
+
+Per iniziare: **Cataloghi DAT → Importa DAT MAME 0.78**, oppure selezionare il Raspberry e **Importa DAT FBNeo installato**. Poi importare i propri archivi, selezionarli in **File e raccolte**, scegliere DAT e organizzazione del set, validare e preparare la sincronizzazione. La consultazione del catalogo non concede diritti sulle ROM. Nessun BIOS proprietario viene scaricato o copiato automaticamente.
+
+Guide: [catalogazione massiva](docs/CATALOGS.md), [Arcade/Neo Geo e compatibilità](docs/ARCADE.md), [fonti](docs/PROVIDERS.md), [architettura](docs/ARCHITECTURE.md), [collaudo](docs/VALIDATION-INCREMENT4.md).
+
 ## Incremento 3 — Raspberry Pi e sincronizzazione
 
 In **Dispositivi**, registra hostname/IP, porta, utente e directory RetroPie. Verifica la fingerprint SSH, apri l'assistente Ed25519 e inserisci la password soltanto nel terminale OpenSSH di Windows. Il test successivo verifica accesso con chiave, SFTP, hardware, versioni disponibili, temperatura, RAM, permessi e spazio reale.
@@ -56,16 +73,22 @@ Consultare la [guida ai provider](docs/PROVIDERS.md), la [guida ai download](doc
 | SNES | `snes` | SFC, SMC |
 | Master System | `mastersystem` | SMS |
 | Mega Drive / Genesis | `megadrive` | MD, GEN, SMD, BIN con console indicata |
+| SG-1000 | `sg-1000` | SG |
+| PC Engine / TurboGrafx-16 | `pcengine` | PCE |
+| Atari 2600 / 7800 | `atari2600`, `atari7800` | A26, A78 |
+| Game Gear | `gamegear` | GG |
+| Neo Geo Pocket / Color | `ngp`, `ngpc` | NGP, NGC |
 | Game Boy | `gb` | GB |
 | Game Boy Color | `gbc` | GBC |
 | Game Boy Advance | `gba` | GBA |
 | Neo Geo | `neogeo` | ZIP, 7Z con console indicata o cartella nominata `neogeo` |
 | Arcade | `arcade` | ZIP, 7Z con console indicata o cartella nominata `arcade` |
+| MAME 2003 / FinalBurn Neo | `mame-libretro`, `fba` | ZIP (MAME 0.78), ZIP/7Z (FBNeo) |
 | PlayStation | `psx` | CUE e tracce collegate, M3U, CHD, PBP, ISO |
 
 Per gli archivi ZIP/7Z la console viene dedotta dal percorso o scelta nell'importazione. Il contenuto degli archivi resta intatto. Un BIN PS1 richiede il relativo CUE. I riferimenti CUE/M3U devono essere relativi alla cartella del descrittore, esistere e rimanere nella sorgente autorizzata. Le playlist M3U accettano dischi CUE/CHD/PBP/ISO. File con estensioni sconosciute vengono ignorati. I formati ambigui vengono segnalati.
 
-Il riconoscimento iniziale usa estensione e nome del file. Metadati e copertine possono essere completati nel dettaglio. Il supporto dell'emulatore, la versione del romset Arcade e gli eventuali requisiti BIOS vanno verificati sulla propria installazione RetroPie. Il progetto gestisce i file e prepara l'esportazione, mentre la verifica di avvio sul Raspberry Pi appartiene agli incrementi successivi.
+Il riconoscimento iniziale usa estensione e nome del file; la verifica arcade successiva usa il DAT e gli hash interni. Metadati e copertine possono essere completati nel dettaglio. I test di avvio restano distinti dalla validazione: registrare dispositivo ed evidenze dopo una prova reale. CPS-3 e PS1 richiedono attenzione alle prestazioni del Raspberry Pi 3 B+; nessun emulatore viene installato automaticamente.
 
 ## Esportazione
 

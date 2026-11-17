@@ -88,12 +88,23 @@ export function bytes(value: number): string {
 
 export async function waitForJob<T>(
   id: string,
-  onStatus: (status: string) => void,
+  onStatus: (
+    status: string,
+    progress?: { scanned_files?: number; total_files?: number },
+  ) => void,
 ): Promise<Job<T>> {
   for (;;) {
     const job = await api<Job<T>>(`/jobs/${id}`);
-    onStatus(job.status);
-    if (job.status === "failed") throw new Error(job.error);
+    onStatus(
+      job.status,
+      (
+        job.result as {
+          progress?: { scanned_files?: number; total_files?: number };
+        }
+      )?.progress,
+    );
+    if (["failed", "cancelled"].includes(job.status))
+      throw new Error(job.error);
     if (job.status === "completed") return job;
     await new Promise((resolve) => setTimeout(resolve, 800));
   }

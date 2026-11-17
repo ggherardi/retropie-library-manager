@@ -1,4 +1,5 @@
 import Devices from "./Devices";
+import Intelligence, { type IntelligenceView } from "./Intelligence";
 import Discovery from "./Discovery";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -33,6 +34,7 @@ import {
 } from "./api";
 
 type Page =
+  | IntelligenceView
   | "Dispositivi"
   | "Sincronizzazione"
   | "Game Discovery"
@@ -52,6 +54,11 @@ type Stats = {
 };
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Piattaforme", icon: Gamepad2 },
+  { label: "Arcade", icon: Disc3 },
+  { label: "Neo Geo", icon: Gamepad2 },
+  { label: "Cataloghi DAT", icon: Library },
+  { label: "Raccolte", icon: Heart },
   { label: "Catalogo", icon: Library },
   { label: "Game Discovery", icon: Search },
   { label: "Download Manager", icon: ArrowDownToLine },
@@ -97,6 +104,7 @@ export default function App() {
   const [scanPlatform, setScanPlatform] = useState("");
   const [preview, setPreview] = useState<ScanResult | null>(null);
   const [scanId, setScanId] = useState("");
+  const [activeScan, setActiveScan] = useState("");
   const [importIds, setImportIds] = useState<number[]>([]);
   const [previewPage, setPreviewPage] = useState(1);
   const [license, setLicense] = useState("Da verificare");
@@ -181,9 +189,12 @@ export default function App() {
     label: string,
   ): Promise<Job<T>> {
     const queued = await api<Job>(path, "POST", body);
-    return waitForJob<T>(queued.id, (status) =>
-      setBusy(`${label} · ${status === "queued" ? "in coda" : "in corso"}`),
-    );
+    if (path === "/imports/scan") setActiveScan(queued.id);
+    return waitForJob<T>(queued.id, (status, progress) =>
+      setBusy(
+        `${label} · ${status === "queued" ? "in coda" : "in corso"}${progress ? ` · ${progress.scanned_files || 0} / ${progress.total_files || "…"} file` : ""}`,
+      ),
+    ).finally(() => setActiveScan(""));
   }
   function toggle(ids: number[], id: number) {
     return ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id];
@@ -460,7 +471,15 @@ export default function App() {
                                 ? "Confronta la libreria e trasferisci i giochi sul Raspberry."
                                 : page === "Download Manager"
                                   ? "Segui avanzamento, verifiche e importazioni della tua coda."
-                                  : "Gestisci i cataloghi di giochi distribuibili legalmente."}
+                                  : [
+                                        "Piattaforme",
+                                        "Arcade",
+                                        "Neo Geo",
+                                        "Cataloghi DAT",
+                                        "Raccolte",
+                                      ].includes(page)
+                                    ? "Cataloghi, file posseduti e compatibilità: ogni dato con la sua evidenza."
+                                    : "Gestisci i cataloghi di giochi distribuibili legalmente."}
               </p>
             </div>
             {["Dashboard", "Catalogo", "Preferiti"].includes(page) && (
@@ -491,6 +510,17 @@ export default function App() {
             <div className="message" role="status">
               <LoaderCircle className="spin" size={18} />
               {busy}
+              {activeScan && (
+                <button
+                  onClick={() =>
+                    void api(`/jobs/${activeScan}/cancel`, "POST").catch((e) =>
+                      setError(String(e)),
+                    )
+                  }
+                >
+                  Annulla scansione
+                </button>
+              )}
             </div>
           )}
           {page === "Dashboard" && (
@@ -614,6 +644,24 @@ export default function App() {
                 )}
               </div>
             </>
+          )}
+          {[
+            "Piattaforme",
+            "Arcade",
+            "Neo Geo",
+            "Cataloghi DAT",
+            "Raccolte",
+          ].includes(page) && (
+            <Intelligence
+              key={page}
+              view={page as IntelligenceView}
+              platforms={platforms}
+              onImport={() => navigate("Importazione")}
+              onSync={(ids) => {
+                setSelected(ids);
+                navigate("Sincronizzazione");
+              }}
+            />
           )}
           {(page === "Catalogo" || page === "Preferiti") && catalog}
           {(page === "Game Discovery" || page === "Download Manager") && (
@@ -1088,7 +1136,8 @@ export default function App() {
           )}
         </div>
         <footer>
-          RetroPie Library Manager <span>Incremento 3 · Raspberry Pi</span>
+          RetroPie Library Manager{" "}
+          <span>Incremento 4 · Arcade Intelligence</span>
         </footer>
       </main>
       {detail && (

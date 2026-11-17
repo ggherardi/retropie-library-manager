@@ -25,6 +25,15 @@ test-results/
 *.gb
 *.gbc
 *.gba
+*.fds
+*.smd
+*.sg
+*.pce
+*.a26
+*.a78
+*.gg
+*.ngp
+*.ngc
 *.bin
 *.cue
 *.iso

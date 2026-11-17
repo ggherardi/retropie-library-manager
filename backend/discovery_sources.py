@@ -11,11 +11,28 @@ from backend.config import EXTENSIONS
 from backend.network import PublicHTTP
 
 SOURCES = {
+    "curated-homebrew": {"name": "Homebrew verificati · SNES / Mega Drive", "repo": ""},
     "gbdev": {"name": "GBDev · Homebrew Hub", "repo": "gbdev/database"},
     "gbadev": {"name": "GBADev · Homebrew Hub", "repo": "gbadev-org/games"},
     "nesdev": {"name": "NESDev · Homebrew Hub", "repo": "nesdev-org/homebrew-db"},
 }
 LINK_SOURCES = [
+    {
+        "id": "mamedev-free",
+        "name": "MAME · titoli autorizzati dagli autori",
+        "url": "https://www.mamedev.org/roms/",
+        "status": "link_only",
+        "message": "Acquisizione dal sito originale con accettazione delle condizioni non commerciali; nessuna redistribuzione o download massivo implicito.",
+        "evidence": "https://www.mamedev.org/roms/",
+    },
+    {
+        "id": "ngdevkit",
+        "name": "Neo Geo · ngdevkit examples",
+        "url": "https://github.com/dciabrin/ngdevkit-examples",
+        "status": "link_only",
+        "message": "Sorgenti e licenze degli asset disponibili; nessun pacchetto ROM precompilato con integrità verificata integrato nel provider.",
+        "evidence": "https://github.com/dciabrin/ngdevkit-examples#license",
+    },
     {
         "id": "itch",
         "name": "itch.io",
@@ -118,7 +135,7 @@ def supported_download(platform: str, filename: str) -> bool:
         return False  # A single remote descriptor cannot supply the linked tracks.
     return safe_filename(filename) and (
         EXTENSIONS.get(extension) == platform
-        or (extension == ".zip" and platform in {"arcade", "neogeo"})
+        or (extension in {".zip", ".7z"} and platform in {"arcade", "neogeo", "fba", "mame-libretro"})
         or (extension == ".bin" and platform == "megadrive")
     )
 
@@ -222,6 +239,10 @@ class GitHubCatalog:
         cache.mkdir(parents=True, exist_ok=True)
 
     def load(self, provider: str, progress=lambda done, total: None) -> list[dict]:
+        if provider == "curated-homebrew":
+            from backend.curated_sources import load_curated
+
+            return load_curated(self.http, self.cache, progress)
         repo = SOURCES[provider]["repo"]
         tree = json.loads(
             self.http.read(f"https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1", 20_000_000)

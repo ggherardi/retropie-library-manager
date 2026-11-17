@@ -12,19 +12,21 @@ Cataloghi reali GBDev/GBADev/NESDev, ricerca e filtri, selezione multipla, prove
 
 Dispositivi multipli e predefinito, assistente Ed25519 e fingerprint, diagnostica reale, sincronizzazione incrementale con dry-run/conferma, gruppi atomici PS1, SHA-256, annullamento/retry, capacità effettiva, gamelist con backup e preservazione dei metadati, copertine locali autorizzate, test automatici e collaudo sul Raspberry. Nessun aggiornamento del sistema o trasferimento BIOS. I risultati e i limiti del collaudo sono in docs/VALIDATION-INCREMENT3.md.
 
-## Incremento 4 proposto — Qualità, compatibilità e recupero
+## Incremento 4 — Massive Library & Arcade Intelligence
 
-- Revisione guidata dei conflitti remoti, ripristino dei backup gamelist e adozione dei giochi già presenti fuori dalle directory RLM.
-- Profili verificati per core PS1/Arcade, collaudi di avvio concordati e librerie grandi su microSD 128 GB.
-- Provider SNES, Mega Drive, Master System, Neo Geo/Arcade con API e autorizzazioni verificabili; oggi supportati tramite importazione locale o manifest dell'operatore.
-- Nuove fonti di metadati e immagini autorizzate, mantenendo il matching conservativo.
-- Percorsi spostati, reindicizzazione, raccolte e modifica massiva con anteprima.
-- Gestione avanzata dei dischi e conversioni opzionali CHD con strumenti locali autorizzati.
-- Cataloghi firmati e report delle variazioni di licenza/disponibilità.
+Implementati cataloghi DAT/XML/JSON/CSV versionati, streaming/background/cancel, FTS5 e paginazione; parent/clone/BIOS, ZIP/7z con hash componenti e set split/merged/non-merged/full-non-merged; MAME 0.78 e FBNeo per revisione reale; rilevamento read-only e blocchi di sync; piattaforme/Arcade/Neo Geo, raccolte e varianti; evidenze di test, screenshot e matching conservativo; due homebrew verificati SNES/Mega Drive, report acquisizioni e cancellazione delle scansioni. Aggiunte SG-1000, PCE, Atari 2600/7800, Game Gear, NGP/NGPC. Collaudo su oltre 10.000 record reali e migliaia di file sintetici.
 
-## Incremento 5 — Distribuzione desktop
+I limiti sono espliciti: nessuna promessa di frame rate, nessun clone merged esportato fingendo di selezionarlo, nessuna ROM commerciale o BIOS acquisito automaticamente, nessun riavvio o configurazione remota impliciti. Corrispondenza DAT/core e test di gioco restano separati.
 
-- Installer Windows firmato, aggiornamenti espliciti e backup/ripristino guidato.
-- Selezione cartelle tramite shell nativa e avanzamento/cancellazione dei lavori locali.
-- Benchmark con decine di migliaia di titoli, limiti di cache configurabili e recupero dopo arresto forzato.
-- Revisione dell'accessibilità e traduzioni dell'interfaccia.
+## Incremento 5 proposto — Prove e recupero guidato
+
+- Collaudo assistito dalla **sessione locale RetroPie**, con consenso per ogni cambiamento: core/opzioni, controller, avvio e prestazioni per singolo gioco, priorità ai contenuti autorizzati già posseduti. CPS-3 e PS1 da valutare sul Pi 3 B+.
+- Ripristino dei backup gamelist, revisione dei conflitti e adozione di librerie già presenti fuori dalle directory RLM, senza cancellazioni automatiche.
+- Riconciliazione esplicita delle identità tra DAT, senza unificare titoli per somiglianza; rapporti delle variazioni di manifest/licenze.
+- Selezione dei cloni merged tramite capacità realmente supportate dai core; profili BIOS opzionali documentati, senza distribuzione proprietaria.
+- Reindicizzazione di percorsi spostati, selezioni massive guidate oltre la pagina, software-list/CHD e conversioni locali opzionali autorizzate.
+- Aggiornare la dipendenza di sviluppo picomatch appena il manutentore pubblica una correzione, mantenendo audit e test.
+
+## Incremento 6 proposto — Distribuzione desktop
+
+Installer Windows firmato, selezione cartelle nativa, backup/ripristino guidato, aggiornamenti espliciti, cache configurabile, accessibilità e localizzazioni. Benchmark su librerie remote reali e schede 128 GB quando disponibili e autorizzate.

@@ -1,7 +1,18 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, Text, create_engine, event
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+    event,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from backend.config import DATA
@@ -36,6 +47,111 @@ class Game(Base):
     license: Mapped[str] = mapped_column(Text, default="Da verificare")
     files: Mapped[list[dict[str, Any]]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CatalogSource(Base):
+    __tablename__ = "catalog_sources"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    name: Mapped[str] = mapped_column(String(300))
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    active_run: Mapped[str] = mapped_column(String(36), default="", index=True)
+    sha256: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CatalogEntry(Base):
+    __tablename__ = "catalog_entries"
+    __table_args__ = (
+        UniqueConstraint("run_id", "name"),
+        Index("ix_catalog_page", "run_id", "platform", "title"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36), index=True)
+    source_id: Mapped[str] = mapped_column(String(80), index=True)
+    uid: Mapped[str] = mapped_column(String(64), index=True)
+    name: Mapped[str] = mapped_column(String(300), index=True)
+    title: Mapped[str] = mapped_column(String(500))
+    platform: Mapped[str] = mapped_column(String(30), index=True)
+    system: Mapped[str] = mapped_column(String(100), default="", index=True)
+    manufacturer: Mapped[str] = mapped_column(String(300), default="")
+    year: Mapped[str] = mapped_column(String(20), default="")
+    genre: Mapped[str] = mapped_column(String(120), default="", index=True)
+    players: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    orientation: Mapped[str] = mapped_column(String(30), default="")
+    controls: Mapped[str] = mapped_column(String(300), default="")
+    parent: Mapped[str] = mapped_column(String(300), default="", index=True)
+    family: Mapped[str] = mapped_column(String(300), index=True)
+    romof: Mapped[str] = mapped_column(String(300), default="")
+    kind: Mapped[str] = mapped_column(String(20), default="game", index=True)
+    components: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    payload_sha: Mapped[str] = mapped_column(String(64))
+
+
+class CatalogRun(Base):
+    __tablename__ = "catalog_runs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    source_id: Mapped[str] = mapped_column(String(80), default="")
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class GameInsight(Base):
+    __tablename__ = "game_insights"
+    game_id: Mapped[int] = mapped_column(primary_key=True)
+    catalog_uid: Mapped[str] = mapped_column(String(64), default="", index=True)
+    preferred_core: Mapped[str] = mapped_column(String(100), default="")
+    machine_mode: Mapped[str] = mapped_column(String(20), default="unknown")
+    asset_kind: Mapped[str] = mapped_column(String(20), default="game")
+    test_status: Mapped[str] = mapped_column(String(20), default="untested", index=True)
+    test_evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    screenshot_path: Mapped[str] = mapped_column(Text, default="")
+
+
+class ArcadeValidation(Base):
+    __tablename__ = "arcade_validations"
+    game_id: Mapped[int] = mapped_column(primary_key=True)
+    catalog_uid: Mapped[str] = mapped_column(String(64), index=True)
+    source_sha: Mapped[str] = mapped_column(String(64))
+    archive_sha: Mapped[str] = mapped_column(String(64))
+    mode: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    report: Mapped[dict] = mapped_column(JSON)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CatalogPreference(Base):
+    __tablename__ = "catalog_preferences"
+    family_key: Mapped[str] = mapped_column(String(150), primary_key=True)
+    preferred_uid: Mapped[str] = mapped_column(String(64))
+
+
+class CoreBinding(Base):
+    __tablename__ = "core_bindings"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    device_id: Mapped[str] = mapped_column(String(36), index=True)
+    source_id: Mapped[str] = mapped_column(String(80))
+    core: Mapped[str] = mapped_column(String(100))
+    source_sha: Mapped[str] = mapped_column(String(64))
+    binary_sha: Mapped[str] = mapped_column(String(64))
+    version: Mapped[str] = mapped_column(String(300))
+    evidence: Mapped[str] = mapped_column(Text)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class SyncPresence(Base):
+    __tablename__ = "sync_presence"
+    __table_args__ = (UniqueConstraint("game_id", "device_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_id: Mapped[int] = mapped_column(Integer, index=True)
+    device_id: Mapped[str] = mapped_column(String(36), index=True)
+    sha256: Mapped[str] = mapped_column(String(64))
+    run_id: Mapped[str] = mapped_column(String(36))
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
 class Setting(Base):

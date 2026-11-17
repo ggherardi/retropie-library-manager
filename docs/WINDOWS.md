@@ -1,5 +1,13 @@
 # Installazione e aggiornamento su Windows 11
 
+## Aggiornamento all'Incremento 4
+
+Arrestare **solo l'app Windows**, salvare `data`, eseguire `git pull --ff-only`, `Setup.cmd` e `Start.cmd`. Alembic applica `0004` conservando libreria, impostazioni, provider, download e dispositivi. Non cancellare il database per aggiungere i DAT. La migrazione non modifica il Raspberry.
+
+Dipendenze nuove: ijson per JSON streaming, py7zr per verifiche senza estrazione. `data/catalogs` contiene manifest e cache dei metadati driver, esclusi da Git e consultabili offline. Scansioni locali/importazioni DAT mostrano progressi e annullamento; gli originali restano invariati. Usare una sola istanza Uvicorn.
+
+Il collaudo ha salvato un backup SQLite consistente e preservato gioco, dispositivo e cronologia precedenti. Risultati e audit dipendenze: [VALIDATION-INCREMENT4.md](VALIDATION-INCREMENT4.md).
+
 Il percorso di riferimento è `C:\Projects\retropie-library-manager`. Sono richiesti Python 3.10+ e Node.js 22.12+ LTS. Git viene usato per aggiornare il codice. Le credenziali GitHub del computer restano gestite esternamente all'applicazione.
 
 ## Installazione

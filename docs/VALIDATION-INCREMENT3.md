@@ -54,7 +54,7 @@ Verificati parsing XML, titolo `2048gb`, riferimento relativo `./rlm-3ea2376b15b
 
 La ripetizione completa, con nuova anteprima e conferma, ha richiesto e trasferito **0 byte**: ROM e gamelist risultano già presenti, senza metadati rinviati.
 
-EmulationStation è stata riavviata come utente pi sulla console `/dev/tty1`. Verificata una sola istanza del binario, creazione riuscita della finestra e lettura del gamelist Game Boy nel log di avvio, senza errori di livello 0. L'hash XML è rimasto identico dopo il riavvio. La diagnostica dell'app è stata aggiornata e riporta EmulationStation attiva. Nessun gioco è stato avviato nell'emulatore durante questa prova.
+**Correzione emersa prima dell'Incremento 4:** l'avvio via SSH con riferimento a `/dev/tty1` non aveva un terminale di controllo valido (`TTY_NR=0`). La finestra e il processo non costituivano una verifica sufficiente: l'utente ha riscontrato errori `/dev/tty` e mancato avvio dei giochi. Ha ripristinato la sessione con reboot completo e avviato correttamente 2048GB con EasySMX USB. L'Incremento 4 registra questo esito come dichiarazione dell'operatore e verifica la sessione esclusivamente in lettura. Non ripetere quel metodo SSH. Nessun test di gioco era stato eseguito dall'assistente durante l'Incremento 3.
 
 ## Limiti delle verifiche
 

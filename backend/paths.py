@@ -25,10 +25,11 @@ def allowed(value: str, roots: list[str]) -> Path:
     return path
 
 
-def digest(path: Path) -> str:
+def digest(path: Path, checkpoint=lambda: None) -> str:
     sha = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            checkpoint()
             sha.update(chunk)
     return sha.hexdigest()
 

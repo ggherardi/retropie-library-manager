@@ -36,6 +36,11 @@ class Retryable(Exception):
 
 
 def validate_archive(path: Path):
+    if path.suffix.lower() == ".7z":
+        from backend.arcade_archives import inspect_archive
+
+        inspect_archive(path)
+        return
     if path.suffix.lower() != ".zip":
         return
     with zipfile.ZipFile(path) as archive:

@@ -532,6 +532,31 @@ class Acquisition:
                 )
                 return {"items": [record(t) for t in tasks], "counts": counts, "total": sum(counts.values())}
 
+        @router.get("/downloads/report")
+        def acquired_report():
+            with self.sessions() as db:
+                return {
+                    "generated_at": now().isoformat(),
+                    "files": [
+                        {
+                            "task_id": t.id,
+                            "title": t.snapshot.get("title"),
+                            "platform": t.snapshot.get("platform"),
+                            "source_url": t.snapshot.get("source_url"),
+                            "license": t.snapshot.get("license"),
+                            "sha256": t.sha256,
+                            "bytes": t.total,
+                            "game_id": t.game_id,
+                            "status": t.status,
+                        }
+                        for t in db.scalars(
+                            select(DownloadTask)
+                            .where(DownloadTask.sha256.is_not(None))
+                            .order_by(DownloadTask.created_at)
+                        )
+                    ],
+                }
+
         @router.post("/downloads/{task_id}/control")
         def control(task_id: str, body: TaskAction):
             if body.action in {"resume", "retry"}:

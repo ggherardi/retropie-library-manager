@@ -1,4 +1,5 @@
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
@@ -22,9 +23,10 @@ from backend.config import DATA, PLATFORMS, PROJECT
 from backend.db import Game, Job, Setting, make_engine, sessions
 from backend.devices import DeviceService
 from backend.exports import LocalTransport
+from backend.intelligence import Intelligence
 from backend.paths import allowed, digest, local_path
 from backend.providers import ManifestProvider, download
-from backend.scanner import candidate, scan
+from backend.scanner import ScanCancelled, candidate, scan
 from backend.schemas import (
     ExportInput,
     FavoriteInput,
@@ -49,6 +51,8 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     mutation_lock = RLock()
     acquisition = Acquisition(session_factory, data_dir, mutation_lock)
     devices = DeviceService(session_factory, mutation_lock)
+    intelligence = Intelligence(session_factory, data_dir, mutation_lock, devices)
+    devices.game_guard = intelligence.prepare_games
 
     @asynccontextmanager
     async def lifespan(app):
@@ -62,23 +66,27 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
         with session_factory.begin() as db:
-            for job in db.scalars(select(Job).where(Job.status.in_(["queued", "running"]))):
+            for job in db.scalars(select(Job).where(Job.status.in_(["queued", "running", "cancelling"]))):
                 job.status = "failed"
                 job.error = "Operazione interrotta dal riavvio. Ripetere l'operazione."
         acquisition.start()
         devices.start()
+        intelligence.start()
         yield
         devices.shutdown()
+        intelligence.shutdown()
         acquisition.shutdown()
         executor.shutdown(wait=True)
         engine.dispose()
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.3.0", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.4.0", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
     app.state.devices = devices
+    app.state.intelligence = intelligence
+    app.include_router(intelligence.router)
     app.include_router(acquisition.router)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     app.add_middleware(
@@ -134,18 +142,40 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
             value = db.get(Setting, "providers")
             return value.value if value else []
 
-    def submit(kind, operation):
+    def submit(kind, operation, cancellable=False):
         job_id = str(uuid4())
         with session_factory.begin() as db:
             db.add(Job(id=job_id, kind=kind, status="queued"))
 
+        checked_at = 0.0
+
+        def checkpoint(progress=None):
+            nonlocal checked_at
+            current = time.monotonic()
+            if current - checked_at < 0.15:
+                return
+            checked_at = current
+            with session_factory.begin() as db:
+                job = db.get(Job, job_id)
+                if job.status == "cancelling":
+                    raise ScanCancelled("Scansione annullata: nessun file importato o modificato")
+                if progress:
+                    job.result = {"progress": progress}
+
         def run():
             try:
+                if cancellable:
+                    checkpoint()
                 with session_factory.begin() as db:
-                    db.get(Job, job_id).status = "running"
-                result = operation()
+                    current_job = db.get(Job, job_id)
+                    if cancellable and current_job.status == "cancelling":
+                        raise ScanCancelled("Scansione annullata")
+                    current_job.status = "running"
+                result = operation(checkpoint) if cancellable else operation()
                 with session_factory.begin() as db:
                     job = db.get(Job, job_id)
+                    if cancellable and job.status == "cancelling":
+                        raise ScanCancelled("Scansione annullata")
                     job.result = result
                     job.status = "completed"
                 logger.info("Job %s %s completed", kind, job_id)
@@ -153,7 +183,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 logger.exception("Job %s %s failed", kind, job_id)
                 with session_factory.begin() as db:
                     job = db.get(Job, job_id)
-                    job.status = "failed"
+                    job.status = "cancelled" if isinstance(exc, ScanCancelled) else "failed"
                     job.error = str(exc)
 
         executor.submit(run)
@@ -167,7 +197,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "0.3.0"}
+        return {"status": "ok", "version": "0.4.0"}
 
     @app.get("/api/platforms")
     def platforms():
@@ -275,12 +305,21 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         if not root.is_dir():
             raise ValueError("Selezionare una cartella")
 
-        def operation():
+        def operation(checkpoint):
             with session_factory() as db:
                 known = set(db.scalars(select(Game.sha256)))
-            return scan(root, body.platform, known)
+            return scan(root, body.platform, known, checkpoint)
 
-        return submit("scan", operation)
+        return submit("scan", operation, cancellable=True)
+
+    @app.post("/api/jobs/{job_id}/cancel")
+    def cancel_scan(job_id: str):
+        with session_factory.begin() as db:
+            job = db.get(Job, job_id)
+            if not job or job.kind != "scan" or job.status not in {"queued", "running"}:
+                raise ValueError("Scansione non annullabile")
+            job.status = "cancelling"
+        return {"ok": True}
 
     @app.post("/api/imports/{job_id}/commit", status_code=202)
     def commit_import(job_id: str, body: ImportInput):
@@ -338,6 +377,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 selected = list(db.scalars(select(Game).where(Game.id.in_(body.game_ids)).order_by(Game.id)))
                 if len(selected) != len(set(body.game_ids)):
                     raise ValueError("La selezione contiene giochi inesistenti")
+                intelligence.prepare_games(selected)
                 result = LocalTransport().publish(selected, destination, body.dry_run)
                 capacity = acquisition.storage()
                 capacity["selection_fits_target"] = result["required_bytes"] <= capacity["usable_bytes"]

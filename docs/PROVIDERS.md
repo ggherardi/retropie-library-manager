@@ -1,5 +1,20 @@
 # Guida ai provider
 
+## Estensione verificata nell'Incremento 4
+
+Il provider `curated-homebrew` aggiunge **due file specifici**, verificati il 17 novembre 2026. Il refresh live è riuscito: legge inventari e prove di licenza senza scaricare i giochi. Insieme alle tre fonti precedenti Discovery contiene 1.193 voci, **51 idonee** all'acquisizione autorizzata. La disponibilità finale si ricontrolla al download. L'Incremento 4 non ha avviato nuovi download di ROM.
+
+| Titolo | Piattaforma / formato | Autore | Prova dei diritti |
+| --- | --- | --- | --- |
+| Miniplanets REMIX REV04 | Mega Drive / BIN | Javier Degirolmo (Sik) | [Progetto originale](https://github.com/sikthehedgehog/miniplanets), LICENSE.txt Zlib del commit fissato nell'adapter, verificata per hash. |
+| Horizontal Shooter | SNES / SFC | Marcus Rowe (UnDisbeliever) | [Progetto originale](https://github.com/undisbeliever/horizontal-shooter), MIT per codice e CC0 per asset; [dichiarazione per il file distribuito](https://github.com/retrobrews/snes-games/blob/master/horizontal-shooter.txt). |
+
+Ogni voce registra URL originale, autore, licenze separate, revisione immutabile, URL/dimensione/hash Git del file, dichiarazione e data di verifica. La cache della dichiarazione è ricontrollata al riuso. Non si estende l'autorizzazione agli altri file di retrobrews o di raccolte simili.
+
+La ricerca Neo Geo/arcade ha incluso [ngdevkit-examples](https://github.com/dciabrin/ngdevkit-examples): codice/esempi con licenze dichiarate, ma nessuna release binaria verificata per acquisizione automatica in questo incremento. Rimane un collegamento originale. [MAME legal ROM downloads](https://www.mamedev.org/roms/) prevede condizioni specifiche e accettazione sulle pagine originali: l'app fornisce il collegamento, senza aggirare il flusso o automatizzare l'archivio. Nessun provider BIOS.
+
+NES/GB/GBC/GBA continuano a usare le tre fonti descritte sotto. Fonti senza diritti/release verificabili non sono conteggiate come download disponibili. La selezione massiva per fonte/piattaforma/licenza usa l'anteprima con conferma. **Esporta report dei file acquisiti** aggiunge un riepilogo JSON nel Download Manager.
+
 ## Fonti operative
 
 La verifica live del 17 novembre 2026 ha letto gli inventari GitHub e tutti i metadati dei tre database. I conteggi comprendono le voci di tipo `game` e `homebrew`. Strumenti, musica, demo e hack ROM vengono esclusi.
@@ -41,7 +56,7 @@ L'API del sito Homebrew Hub su hh3.gbdev.io ha restituito HTTP 403 durante la ve
 
 **Sorgenti e download** continua ad accettare il formato dell'Incremento 1, documentato nel README. Il manifest deve provenire da una fonte autorizzata e riportare URL HTTPS diretto, licenza, riferimento dei diritti, dimensione e SHA-256. `redistribution_allowed: true` è una dichiarazione esplicita dell'operatore, che deve aver verificato i diritti. Il semplice accesso pubblico al file non costituisce tale dichiarazione.
 
-Le voci vengono importate anche in Discovery e possono entrare nella coda insieme ai provider inclusi. Sono supportati i formati singoli riconosciuti e ZIP per Arcade/Neo Geo. CUE isolati e archivi 7Z richiedono la procedura di importazione locale. Per SNES, Mega Drive, Master System, Neo Geo e Arcade l'acquisizione usa manifest configurati dall'utente. Questo incremento include cataloghi remoti preconfigurati per NES, GB/GBC e GBA.
+Le voci vengono importate anche in Discovery. Sono supportati i formati singoli riconosciuti e ZIP/7Z per Arcade, Neo Geo, fba e mame-libretro. Il controllo dell'archivio all'acquisizione non sostituisce la successiva validazione DAT prima dell'export/sync. CUE isolati richiedono l'importazione locale dei file collegati. SNES e Mega Drive hanno i due titoli preconfigurati sopra; ulteriori titoli richiedono manifest esplicitamente verificati dall'operatore.
 
 ## Metadati
 

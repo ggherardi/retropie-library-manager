@@ -41,8 +41,9 @@ def build_plan(connection, config, games, options):
     by_id = {g.id: g for g in games}
     for entry in manifest["games"]:
         game = by_id[entry["id"]]
-        system = diag["systems"].get(game.platform)
-        system_root = config["rom_root"] + "/" + game.platform
+        platform = entry["platform"]
+        system = diag["systems"].get(platform)
+        system_root = config["rom_root"] + "/" + platform
         if not system or posixpath.normpath(system["path"]) != system_root:
             blocked.append(f"{game.title}: directory console diversa dalla configurazione EmulationStation")
             continue
@@ -125,7 +126,7 @@ def build_plan(connection, config, games, options):
                 record["image"] = "./" + relative
             except (OSError, ValueError) as exc:
                 warnings.append(f"{game.title}: copertina omessa ({exc})")
-        xml_games.setdefault(game.platform, []).append(record)
+        xml_games.setdefault(platform, []).append(record)
     lists = []
     if options.metadata:
         for platform, records in xml_games.items():

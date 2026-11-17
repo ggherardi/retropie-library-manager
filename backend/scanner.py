@@ -12,6 +12,10 @@ CUE_FILE = re.compile(r'^\s*FILE\s+(?:"([^"]+)"|(\S+))\s+\S+\s*$', re.IGNORECASE
 DISC = re.compile(r"\s*[\(\[](?:(?:disc|disk|cd)\s*\d+)[\)\]]", re.IGNORECASE)
 
 
+class ScanCancelled(Exception):
+    pass
+
+
 def linked_files(path: Path, root: Path, stack: set[Path] | None = None) -> list[Path]:
     path = within(path, root)
     stack = set() if stack is None else stack
@@ -54,13 +58,13 @@ def detect(path: Path, override: str | None) -> str | None:
     return EXTENSIONS.get(suffix)
 
 
-def candidate(entrypoints: list[Path], root: Path, platform: str) -> dict:
+def candidate(entrypoints: list[Path], root: Path, platform: str, checkpoint=lambda: None) -> dict:
     paths = list(dict.fromkeys(p for entry in entrypoints for p in linked_files(entry, root)))
     base = Path(os.path.commonpath([str(p.parent) for p in paths]))
     files = []
     for path in paths:
         stat = path.stat()
-        sha = digest(path)
+        sha = digest(path, checkpoint)
         after = path.stat()
         if (stat.st_size, stat.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
             raise ValueError("File cambiato durante la scansione")
@@ -96,12 +100,13 @@ def candidate(entrypoints: list[Path], root: Path, platform: str) -> dict:
     }
 
 
-def scan(root: Path, override: str | None, known: set[str]) -> dict:
-    paths = []
+def scan(root: Path, override: str | None, known: set[str], checkpoint=lambda progress=None: None) -> dict:
+    paths: list[Path] = []
     warnings = []
     for directory, dirs, filenames in os.walk(
         root, followlinks=False, onerror=lambda e: warnings.append(str(e))
     ):
+        checkpoint({"phase": "Enumerazione file", "scanned_files": len(paths)})
         dirs[:] = [
             d
             for d in dirs
@@ -115,7 +120,8 @@ def scan(root: Path, override: str | None, known: set[str]) -> dict:
     paths.sort(key=lambda p: ({".m3u": 0, ".cue": 1}.get(p.suffix.lower(), 2), str(p).lower()))
     consumed: set[Path] = set()
     candidates: list[dict[str, Any]] = []
-    for path in paths:
+    for index, path in enumerate(paths):
+        checkpoint({"phase": "Verifica SHA-256", "scanned_files": index, "total_files": len(paths)})
         if path in consumed:
             continue
         platform = detect(path, override)
@@ -144,7 +150,7 @@ def scan(root: Path, override: str | None, known: set[str]) -> dict:
                     ],
                     key=lambda p: int(re.findall(r"(?:disc|disk|cd)\s*(\d+)", p.stem, re.I)[0]),
                 )
-            item = candidate(entries, root, platform)
+            item = candidate(entries, root, platform, checkpoint)
             consumed.update(Path(f["path"]) for f in item["files"])
             item["id"] = len(candidates)
             item["duplicate"] = item["sha256"] in known

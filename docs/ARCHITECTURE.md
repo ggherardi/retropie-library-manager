@@ -1,5 +1,23 @@
 # Architettura
 
+## Cataloghi massivi e Arcade Intelligence (Incremento 4)
+
+La migrazione congelata `0004` aggiunge CatalogSource, CatalogEntry, CatalogRun, GameInsight, ArcadeValidation, CatalogPreference, CoreBinding e SyncPresence, più FTS5 e trigger insert/delete. Game e Device esistenti restano invariati. La cronologia sync precedente viene adottata solo a parità di hash dei file.
+
+`catalog_formats.py` espone iteratori XML sicuro, DAT ClrMamePro, JSON/ijson e CSV. La memoria contiene un record, un blocco di 250 inserimenti e l'indice compatto nome/parent per risolvere le famiglie. UID stabile per fonte/nome e hash del payload distinguono aggiunte e modifiche. Una generazione in staging viene pubblicata con un cambio atomico di active_run; errori/cancel conservano quella precedente. FTS si aggiorna nella stessa transazione. Le risposte di elenco sono paginate ed escludono i componenti.
+
+`intelligence.py` coordina un worker seriale dedicato, importazioni, validazioni, matching e rapporti persistenti. All'avvio ripulisce lo staging interrotto. La cancellazione ha effetto fino alla pubblicazione atomica. `official_catalogs.py` usa repository/percorsi prefissati, revisioni Git e hash verificati del DAT e dei driver. La provenienza ufficiale verificata è un attributo interno, non autocertificabile dal manifest dell'utente.
+
+`arcade_archives.py` confronta contenuti e grafo parent/clone/BIOS. Per 7z una WriterFactory restituisce sink di digest senza scrivere i membri sul filesystem. Nomi, dimensioni, hash, espansione, link e cifratura sono controllati. Il rapporto distingue completezza, esportabilità, corrispondenza col core e test dell'operatore; nessun archivio viene modificato.
+
+`core_profiles.py` legge metadati core/configurazioni, BIOS e terminale EmulationStation mediante RPC costante. `retro_get_system_info` è isolato con timeout, senza inizializzare il core. Il game_guard viene chiamato prima del piano e prima del trasferimento; blocca set incompleti, rapporti scaduti e configurazioni incompatibili. Manifest e gamelist usano sistema e nome tecnico verificati. Nessuna configurazione remota viene scritta dall'intelligence.
+
+`curated_sources.py` aggiunge due release con prove dei diritti per singolo file, riutilizzando PublicHTTP, DiscoveryEntry, planner con conferma e DownloadManager. `/downloads/report` restituisce hash, dimensioni, provenienza e licenza. I cataloghi DAT non entrano nelle selezioni di download.
+
+`Intelligence.tsx` presenta piattaforme, Arcade, Neo Geo, raccolte, filtri, DAT, profili, varianti e rapporti. Gli elenchi caricano 36 record per pagina; i dettagli sono richiesti separatamente. La variante preferita non implica possesso o compatibilità. Le evidenze di test conservano dispositivo, nota, data e SHA-256 del gioco; gli esiti con hash diverso non entrano nei conteggi dei test riusciti.
+
+Le scansioni locali espongono progresso e cancellazione cooperativa tra blocchi di hashing. L'importazione confermata mantiene la transazione atomica e rilegge gli originali; la scansione annullata non importa candidati parziali.
+
 ## Componenti della libreria
 
 La SPA React/TypeScript usa API JSON sullo stesso host. FastAPI serve anche la build e i font; Vite usa un proxy locale durante lo sviluppo. Il catalogo è paginato lato server. SQLite usa WAL, timeout e transazioni SQLAlchemy; Alembic conserva la storia dello schema.

@@ -1,5 +1,13 @@
 # Sincronizzazione RetroPie
 
+## Arcade nell'Incremento 4
+
+Prima del normale dry-run, i set arcade devono avere un rapporto DAT completo e attuale. Si rileggono hash e dipendenze, versione/hash del core installato, default/override del gioco e BIOS esterni già presenti nelle posizioni supportate. Incompletezza, DAT aggiornato, core diverso o BIOS mancante bloccano il piano. [ARCADE.md](ARCADE.md) descrive organizzazioni dei set, cloni merged e nomi tecnici.
+
+Le preferenze core sono salvate localmente: l'app non modifica emulators.cfg. Nessun BIOS viene scaricato o trasferito separatamente. Le nuove console richiedono un core rilevato/configurato. Restano attive le garanzie SFTP e gamelist sotto descritte.
+
+Non avviare EmulationStation direttamente da SSH senza terminale locale valido. Il precedente TTY_NR=0 ha causato errori `/dev/tty`, risolti dall'utente con reboot. Il nuovo rilevamento legge il TTY senza riavviare nulla. Reboot o cambiamenti di sessione richiedono consenso specifico.
+
 ## Uso
 
 Selezionare i giochi nel Catalogo e premere Sincronizza sul Raspberry, oppure usare la selezione paginata in Sincronizzazione. Scegliere il dispositivo, metadati e copertine opzionali. Analizza e prepara dry-run legge e verifica gli originali, la configurazione EmulationStation e i file remoti. Non modifica il Raspberry.

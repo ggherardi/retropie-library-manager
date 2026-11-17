@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { api, bytes, waitForJob, type Job } from "./api";
+import { saveReport } from "./intelligence-api";
 
 type Filters = {
   q: string;
@@ -944,6 +945,18 @@ export default function Discovery({
           {configForm}
           <section className="panel">
             <h2>Download Manager</h2>
+            <button
+              onClick={() =>
+                void action("Report acquisizioni", async () =>
+                  saveReport(
+                    await api("/downloads/report"),
+                    "report-acquisizioni.json",
+                  ),
+                )
+              }
+            >
+              Esporta report dei file acquisiti
+            </button>
             <p className="muted">
               La coda è salvata sul computer. La ripresa usa HTTP Range quando
               supportato, altrimenti ricomincia il trasferimento.
