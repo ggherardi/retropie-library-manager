@@ -6,7 +6,7 @@ Data: 18 novembre 2026. Versione applicativa: **0.7.0**.
 
 Il percorso predefinito **Aggiungi giochi** esegue analisi, importazione, arricchimento e installazione verificata con una sola conferma iniziale. Non richiede una seconda sincronizzazione manuale. Il collaudo reale ha aggiunto **Crash Bandicoot (USA)** al Raspberry, conservando Vagrant Story e gli altri giochi. F-FF, già presente, è stato riconosciuto senza duplicarlo. Metal Slug 5 è rimasto da verificare senza impedire le altre installazioni.
 
-La presenza dei file, la visibilità nel menu e l'avvio sono evidenze separate. Alla chiusura della verifica tecnica, Crash ha file e metadati verificati; il controllo sul televisore e la prova d'avvio sono stati richiesti all'operatore e non sono ancora registrati in questo rapporto. Vagrant Story era già stato avviato con esito positivo dall'utente nell'Incremento 6.1; non è stata eseguita una nuova partita durante questo collaudo.
+La presenza dei file, la visibilità nel menu e l'avvio sono evidenze separate. Dopo la verifica tecnica, l'utente ha confermato dalla console locale: **«Crash è visibile e si avvia»**. La visibilità è registrata negli elementi di installazione e l'avvio riuscito in GameInsight come testimonianza dell'operatore, legata al dispositivo e allo SHA-256 del gioco. Il collaudo end-to-end è concluso; non si deducono durata della partita, progressione o completamento del gioco. Vagrant Story era già stato avviato con esito positivo dall'utente nell'Incremento 6.1; non è stata eseguita una nuova partita durante questo collaudo.
 
 ## Architettura implementata
 
@@ -56,6 +56,7 @@ I file locali utilizzati erano già presenti nelle sorgenti autorizzate. Nessun 
 | Nuove righe Game create dal collaudo | **0**: Crash e F-FF erano già importati |
 | Giochi selezionati validi | **2**: Crash Bandicoot (USA), F-FF |
 | Nuovi giochi effettivamente trasferiti | **1**: Crash Bandicoot (USA) |
+| Nuovo titolo visibile e avviato, confermato dall'utente | **1**: Crash Bandicoot (USA) |
 | Nuovi file ROM | **2**: CUE e BIN di Crash |
 | Dimensione dei nuovi file ROM | **632.083.623 byte** |
 | Trasferimento iniziale Crash, metadati inclusi | **632.084.170 byte** |
@@ -74,7 +75,7 @@ Il primo batch è passato attraverso il nuovo orchestratore, senza conferme sepa
 
 Tutti i file presenti nell'inventario precedente sono rimasti allo stesso percorso con lo stesso SHA-256. Sono stati preservati i salvataggi di 2048, Tobu e Vagrant Story. Sono rimasti invariati il core `lr-pcsx-rearmed`, il BIOS PS1 verificato, `emulators.cfg`, le configurazioni EmulationStation e la raccolta Grandi Classici. Il record XML di Vagrant Story è invariato. Il nuovo record di Crash ha un titolo leggibile e riferimenti risolti.
 
-La verifica dei file e degli XML non prova che un titolo sia giocabile. Per Crash, il controllo sul televisore resta separato; per F-FF questo collaudo attesta la presenza e l'integrità dei file, non una nuova sessione di gioco.
+La verifica dei file e degli XML non prova che un titolo sia giocabile. Per Crash, visibilità e avvio sono confermati separatamente dall'utente sulla console locale; per F-FF questo collaudo attesta la presenza e l'integrità dei file, non una nuova sessione di gioco. I conteggi e i confronti dei file riportati sopra sono quelli rilevati prima della successiva prova locale.
 
 ### Distribuzione dei 99 titoli remoti
 
@@ -123,6 +124,6 @@ Il DAT descrive queste alternative come voci non opzionali e il validatore conse
 - I formati senza una firma affidabile richiedono una scelta manuale motivata. Il riconoscimento di una piattaforma non equivale a una prova d'avvio.
 - Il controllo arcade rimane conservativo sulle alternative BIOS descritte dai DAT. Metal Slug 5 resta da verificare.
 - La verifica SHA-256 remota legge i file via SFTP: sui dischi PS1 grandi anche una ripetizione a zero trasferimenti può richiedere alcuni minuti.
-- La conferma sul televisore e l'avvio di Crash devono essere attestati dall'operatore; non si avvia EmulationStation via SSH per completare questa prova.
+- La conferma dell'operatore attesta visibilità e avvio di Crash; non comprende una verifica estesa della partita. EmulationStation è stata riaperta dalla console locale, senza avvii via SSH.
 
 ROM, BIOS, salvataggi, database, report runtime e credenziali restano esclusi dal repository. Le evidenze dettagliate del collaudo sono conservate localmente nella directory runtime ignorata da Git.
