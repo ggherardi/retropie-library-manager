@@ -183,7 +183,7 @@ class Identifier:
             else "Nessun set completo univoco. Confrontare componenti, variante e versione del DAT; la scelta non aggira la validazione.",
         }
 
-    def identify(self, path, root, roots, paths, checkpoint=lambda: None, decision=None):
+    def identify(self, path, root, roots, paths, checkpoint=lambda: None, decision=None, archive_result=None):
         initial = path.stat()
         decision = decision or {}
         check = format_check(path)
@@ -203,7 +203,7 @@ class Identifier:
         if check["kind"] in {"bios", "ignored"}:
             return {"status": "ignored", "identification": info, "candidate": {}, "consumed": [path]}
         if check["kind"] == "archive":
-            arcade = self.archive(
+            arcade = archive_result or self.archive(
                 path,
                 roots,
                 checkpoint,

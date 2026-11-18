@@ -42,3 +42,7 @@ Aggiungi giochi come ingresso predefinito; file/cartelle browser, drag & drop e 
 ## Sviluppi successivi — Distribuzione desktop
 
 Installer Windows firmato, selezione cartelle nativa, backup/ripristino guidato, aggiornamenti espliciti, cache configurabile, accessibilità e localizzazioni. Benchmark su librerie remote reali e schede 128 GB quando disponibili e autorizzate.
+
+## Incremento 7.1 — Archivi universali (implementato)
+
+ZIP/7z console e PS1, annidamento limitato, decoder isolato, staging atomico, rianalisi dei job, varianti verificate e conservazione del formato arcade. ECM/APE e ricostruzione di descrittori mancanti restano fuori dal supporto automatico: non vengono inventate tracce o dichiarate complete immagini non verificabili.

@@ -120,3 +120,13 @@ Le cartelle stabili `rlm-<hash>` hanno una voce `<folder>` con titolo, descrizio
 `devices.py` espone API /devices e /sync, usa i Job esistenti per la diagnostica e un worker dedicato seriale per anteprime/trasferimenti. Retry di rete limitati a tre tentativi con backoff. Errori di identità o autenticazione non comportano downgrade. Al riavvio le operazioni interrotte richiedono retry esplicito. Le modifiche di configurazione vengono rilevate prima di usare un piano precedente.
 
 `Devices.tsx` aggiunge gestione connessioni, assistente SSH, diagnostica e pagina di sincronizzazione con selezione paginata, anteprima, conferma, copertine e report. I progressi sono aggiornati ogni 800 ms. I test browser iniettano esclusivamente nel server di test un doppio SFTP locale; il servizio normale usa Paramiko reale.
+
+## Preparazione archivi (Incremento 7.1)
+
+`ArchiveAnalyzer` precede l'identificazione della pipeline. Un inventario con evidenze DAT mantiene l'archivio arcade originale; i contenitori console sono preparati da `ArchiveStore` e producono elementi di installazione indipendenti. La riga contenitore ha stato `prepared`, distinto da `installed`. Genitore e figli sono pubblicati in un'unica transazione; chiavi dei percorsi e hash rendono la rianalisi idempotente.
+
+L'apertura e la decompressione avvengono in `archive_worker`, prima limitato e poi autorizzato da un handshake. Su Windows il processo principale possiede un Job Object con limiti di memoria, CPU e numero di processi, e chiusura dei decoder alla morte del padre. La coppia launcher/interprete dell'ambiente virtuale Windows è consentita. Su Linux sono applicati limiti `resource` e terminazione alla morte del padre. I file dell'archivio non vengono mai eseguiti.
+
+I dati passano dallo staging a `data/prepared-archives/v1-<SHA256>/files` tramite rename atomico; il manifest associa hash dell'originale e dei membri preparati. La normalizzazione di maiuscole e separatori dei CUE/M3U avviene solo nelle copie preparate. I file pubblicati sono sorgenti persistenti della libreria e non vengono eliminati dal cleanup dei temporanei. Un cache hit richiede una nuova verifica dei contenuti. Lo staging viene eliminato in caso di errore e recuperato dopo un arresto.
+
+`POST /api/installations/items/{id}/reanalyze` accoda una nuova analisi senza upload, mantenendo consensi e stato del batch. Le varianti vengono raggruppate solo sulla base di famiglie DAT verificate: si applica la preferenza esistente oppure si propone una scelta, senza eliminare archivi o varianti originali. Non sono state necessarie nuove tabelle o migrazioni.

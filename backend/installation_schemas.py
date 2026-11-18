@@ -39,6 +39,7 @@ class InstallationDecision(Input):
     title: str = Field(default="", max_length=300)
     confirmed_title: bool = False
     entry_uid: str = ""
+    variant_source: str = Field(default="", max_length=4096)
     archive_mode: Literal["split", "merged", "non-merged", "full-non-merged"] = "non-merged"
 
 

@@ -52,6 +52,17 @@ type Item = {
     kind?: string;
     candidates?: Candidate[];
     choices?: string[];
+    variants?: { source: string; title: string }[];
+    archive?: {
+      original: string;
+      extracted: boolean;
+      members: number;
+      expanded_bytes?: number;
+      sha256?: string;
+      contents?: string[];
+    };
+    associated_files?: string[];
+    ignored_members?: { name: string; reason: string }[];
   };
   error: Partial<Issue>;
   warnings: string[];
@@ -107,8 +118,10 @@ export const statusLabel: Record<string, string> = {
   queued: "In attesa",
   scanning: "Analisi",
   identifying: "Riconoscimento",
+  reanalyzing: "Rianalisi archivio",
   preview: "Anteprima pronta",
   ready: "Pronto",
+  prepared: "Archivio preparato",
   awaiting_decision: "Da verificare",
   validating: "Validazione",
   importing: "Importazione",
@@ -513,9 +526,10 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
               }}
             >
               <UploadCloud size={38} />
-              <h3>Trascina qui file o cartelle</h3>
+              <h3>Trascina ZIP, 7z, file o cartelle</h3>
               <p>
-                I BIN vanno selezionati insieme al CUE. I file originali restano
+                Preparo automaticamente i giochi contenuti negli archivi,
+                inclusi BIN/CUE. Non serve estrarli: gli originali restano
                 invariati.
               </p>
               <div className="actions">
@@ -949,9 +963,89 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                           ))}
                         </details>
                       )}
+                      {item.identification.archive && (
+                        <details>
+                          <summary>
+                            Mostra dettagli archivio ·{" "}
+                            {item.identification.archive.members} membri
+                          </summary>
+                          <p className="path">
+                            Originale: {item.identification.archive.original}
+                          </p>
+                          <p>
+                            {item.identification.archive.extracted
+                              ? "File preparati automaticamente; originale conservato"
+                              : "Archivio arcade conservato per il core, senza estrazione"}
+                          </p>
+                          {item.identification.archive.expanded_bytes !==
+                            undefined && (
+                            <p>
+                              Dimensione preparata:{" "}
+                              {bytes(
+                                item.identification.archive.expanded_bytes,
+                              )}
+                            </p>
+                          )}
+                          {item.identification.archive.contents?.map((name) => (
+                            <p className="path" key={name}>
+                              {name}
+                            </p>
+                          ))}
+                          {item.identification.ignored_members?.map((m) => (
+                            <p key={m.name}>
+                              {m.name}: {m.reason}
+                            </p>
+                          ))}
+                          {item.identification.associated_files?.length ? (
+                            <p>
+                              File associati rilevati:{" "}
+                              {item.identification.associated_files.join(", ")}
+                            </p>
+                          ) : null}
+                        </details>
+                      )}
+                      {item.identification.kind === "archive_container" && (
+                        <p>{item.identification.reason}</p>
+                      )}
+                      {["awaiting_decision", "failed"].includes(item.status) &&
+                        !item.game_id && (
+                          <button
+                            disabled={!!busy}
+                            onClick={() =>
+                              perform("Rianalisi", () =>
+                                api(
+                                  `/installations/items/${item.id}/reanalyze`,
+                                  "POST",
+                                ),
+                              )
+                            }
+                          >
+                            Rianalizza
+                          </button>
+                        )}
                       {item.status === "awaiting_decision" && (
                         <div className="install-review">
                           <p>{item.identification.reason}</p>
+                          {item.identification.variants?.map((variant) => (
+                            <button
+                              key={variant.source}
+                              disabled={!!busy}
+                              onClick={() =>
+                                perform("Selezione versione", () =>
+                                  api(
+                                    `/installations/items/${item.id}/decision`,
+                                    "POST",
+                                    {
+                                      action: "choose",
+                                      variant_source: variant.source,
+                                    },
+                                  ),
+                                )
+                              }
+                            >
+                              Installa {variant.title}
+                            </button>
+                          ))}
                           <DecisionControls
                             item={item}
                             choose={(body) => {

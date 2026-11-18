@@ -14,6 +14,14 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 7.1 — Archivi ZIP e 7z senza estrazione manuale
+
+Trascinare direttamente ZIP o 7z in **Aggiungi giochi**. L'app prepara i giochi console, raggruppa BIN/CUE e multidisco, analizza archivi annidati e conserva gli ZIP arcade identificati tramite DAT. Documenti e BIOS non diventano giochi; gli originali rimangono intatti. **Rianalizza** aggiorna i job già caricati e la pipeline autorizzata riprende automaticamente.
+
+Il decoder è isolato con limiti di risorse; le sorgenti preparate e i relativi hash persistono per ripresa e deduplica. Un archivio incompleto o un formato non supportato mostra il motivo e i componenti coinvolti, senza chiedere estrazioni manuali. ECM/APE non sono convertiti: serve una copia completa in un formato supportato e il CUE originale quando necessario.
+
+Guida e limiti: [importazione archivi](docs/ARCHIVES.md). Evidenze reali, incluso il caso Tekken 3: [collaudo Incremento 7.1](docs/VALIDATION-INCREMENT7-1.md).
+
 ## Incremento 7 — Aggiungi giochi e installazioni automatiche
 
 Un unico flusso persistente collega selezione browser o sorgenti locali, riconoscimento del contenuto, DAT, importazione idempotente, metadati/media e sincronizzazione incrementale verificata. Ambiguità e BIOS sono separati dai giochi pronti; dischi PS1 restano gruppi completi. Pausa, ripresa, retry, errori per elemento e recupero dopo riavvio sono disponibili in **Installazioni**.

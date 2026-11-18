@@ -2,6 +2,8 @@
 
 ## Uso quotidiano
 
+Dalla versione 0.7.1 è possibile selezionare direttamente ZIP/7z: [preparazione automatica degli archivi](ARCHIVES.md), senza estrazione manuale. I job già caricati possono essere rianalizzati.
+
 Aprire `Start.cmd` e http://127.0.0.1:8000. **Aggiungi giochi** è la pagina iniziale.
 
 1. Selezionare file, più file o una cartella. Per PS1 selezionare insieme CUE e BIN, oppure la cartella completa. Il drag & drop delle cartelle usa le API del browser quando disponibili; resta disponibile il selettore cartella.

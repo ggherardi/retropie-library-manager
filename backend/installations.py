@@ -14,6 +14,8 @@ from sqlalchemy import select
 
 from backend.acquisition import record
 from backend.acquisition_schemas import EnrichInput
+from backend.archive_import import ARCHIVES
+from backend.archive_pipeline import ArchiveAnalyzer, review
 from backend.collection_schemas import MediaApplyInput, MediaPreviewInput
 from backend.db import (
     ArcadeValidation,
@@ -38,6 +40,7 @@ from backend.sync_schemas import SyncConfirm, SyncControl, SyncInput
 
 logger = logging.getLogger("rlm")
 ACTIVE = {
+    "reanalyzing",
     "queued",
     "ready",
     "validating",
@@ -50,6 +53,7 @@ ACTIVE = {
     "pending_refresh",
 }
 STATES = ACTIVE | {
+    "prepared",
     "awaiting_decision",
     "ignored",
     "failed",
@@ -89,6 +93,7 @@ class Installations:
         self.devices, self.acquisition, self.intelligence = devices, acquisition, intelligence
         self.collections, self.media = collections, media
         self.identifier = Identifier(sessions)
+        self.archives = ArchiveAnalyzer(self.identifier, data_dir)
         self.preflight = preflight
         self.stop = threading.Event()
         self.wake = threading.Event()
@@ -102,12 +107,14 @@ class Installations:
             setting = db.get(Setting, "library")
             roots = list(setting.value.get("import_roots", [])) if setting else []
         roots.append(str(self.data / "downloads"))
+        roots.append(str(self.archives.store.root))
         if batch.request.get("upload"):
             roots.append(str(self.data / "inbox" / batch.id))
         return roots
 
     def start(self):
         self.es_cache.clear()
+        self.archives.store.recover()
         # A committed candidate/import/sync ID is a checkpoint. Never recreate library rows.
         with self.sessions.begin() as db:
             for batch in db.scalars(select(InstallationBatch).where(InstallationBatch.status == "scanning")):
@@ -194,6 +201,67 @@ class Installations:
         self.wake.set()
         return result
 
+    def analysis_rows(self, path, root, roots, paths, checkpoint):
+        if path.suffix.lower() in {".rar", ".tar", ".gz", ".bz2", ".xz", ".tgz", ".cab", ".ecm", ".ape"}:
+            return [
+                (
+                    path,
+                    review(
+                        path,
+                        "Formato " + path.suffix.upper() + " non supportato per l'installazione. "
+                        "Sono supportati ZIP/7z con ROM o immagini complete e descrittori originali. "
+                        "Nessuna estrazione o conversione manuale richiesta dall'app.",
+                    ),
+                )
+            ]
+        if path.suffix.lower() in ARCHIVES:
+            return self.archives.analyze(path, root, roots, checkpoint)
+        return [(path, self.identifier.identify(path, root, roots, paths, checkpoint))]
+
+    def save_rows(self, batch_id, rows, replace_id=None):
+        # One transaction publishes the container and all children, including after a crash/retry.
+        with self.lock, self.sessions.begin() as db:
+            for index, (path, result) in enumerate(rows):
+                current = (
+                    db.get(InstallationItem, replace_id)
+                    if index == 0 and replace_id
+                    else db.scalar(
+                        select(InstallationItem).where(
+                            InstallationItem.batch_id == batch_id, InstallationItem.source_key == str(path)
+                        )
+                    )
+                )
+                if current and (
+                    current.game_id
+                    or current.status not in {"reanalyzing", "failed", "awaiting_decision", "ignored"}
+                ):
+                    continue
+                if current is None:
+                    current = InstallationItem(id=str(uuid4()), batch_id=batch_id, source_key=str(path))
+                    db.add(current)
+                for key, value in result.items():
+                    if key != "consumed":
+                        setattr(current, key, value)
+                current.game_id = result["identification"].get("existing_game_id")
+                current.phase, current.error = current.status, {}
+                current.updated_at = now()
+
+    def reanalyze(self, item_id):
+        with self.lock, self.sessions.begin() as db:
+            item = db.get(InstallationItem, item_id)
+            if not item or item.status not in {"awaiting_decision", "failed", "ignored"}:
+                raise ValueError("Rianalisi disponibile per elementi da verificare, esclusi o falliti")
+            if item.game_id or item.sync_run_id:
+                raise ValueError("Elemento già importato: usare Riprova per riprendere l'installazione")
+            batch = db.get(InstallationBatch, item.batch_id)
+            if batch.control != "run":
+                raise ValueError("Riprendere prima il batch in pausa/annullato")
+            item.status = item.phase = "reanalyzing"
+            item.error, item.next_retry = {}, 0
+            batch.status = "running" if batch.authorized else "preview"
+        self.wake.set()
+        return {"id": item_id}
+
     def scan(self, batch):
         try:
             self.checkpoint(batch.id)
@@ -222,18 +290,16 @@ class Installations:
                     consumed.update(Path(f["path"]) for f in existing.candidate.get("files", []))
                     continue
                 try:
-                    result = self.identifier.identify(
-                        path, root, roots, paths, lambda: self.checkpoint(batch.id)
-                    )
-                    consumed.update(result.pop("consumed"))
-                    row = InstallationItem(
-                        id=str(uuid4()),
-                        batch_id=batch.id,
-                        source_key=str(path),
-                        phase="identifying",
-                        game_id=result["identification"].get("existing_game_id"),
-                        **result,
-                    )
+                    rows = self.analysis_rows(path, root, roots, paths, lambda: self.checkpoint(batch.id))
+                    for _, result in rows:
+                        consumed.update(result.pop("consumed", []))
+                    self.save_rows(batch.id, rows)
+                    with self.sessions.begin() as db:
+                        db.get(InstallationBatch, batch.id).progress = {
+                            "scanned_files": index + 1,
+                            "total_files": len(paths),
+                        }
+                    continue
                 except Hold:
                     raise
                 except Exception as exc:
@@ -279,7 +345,7 @@ class Installations:
                 return
             if batch.status == "queued" and not batch.authorized:
                 self.scan(batch)
-            elif batch.authorized:
+            else:
                 with self.sessions() as db:
                     items = list(
                         db.scalars(
@@ -293,6 +359,8 @@ class Installations:
                         )
                     )
                 for item in items:
+                    if not batch.authorized and item.status != "reanalyzing":
+                        continue
                     try:
                         self.checkpoint(batch.id)
                         self.advance(batch, item)
@@ -321,7 +389,9 @@ class Installations:
                 self.summarize(batch.id)
 
     def summarize(self, batch_id):
-        with self.sessions.begin() as db:
+        # Serialize count/read/write with retry and reanalysis so a stale summary
+        # cannot mark a newly resumed batch terminal.
+        with self.lock, self.sessions.begin() as db:
             batch = db.get(InstallationBatch, batch_id)
             counts = Counter(
                 db.scalars(select(InstallationItem.status).where(InstallationItem.batch_id == batch_id))
@@ -357,6 +427,17 @@ class Installations:
         return {"warnings": warnings}
 
     def advance(self, batch, item):
+        if item.status == "reanalyzing":
+            roots = self.roots(batch)
+            path = allowed(item.source_key, roots)
+            root = next(Path(r).resolve() for r in roots if path.is_relative_to(Path(r).resolve()))
+            # Include existing siblings for CUE/M3U grouping; stay within this authorized directory.
+            paths = enumerate_files([str(path.parent)], roots, False)
+            rows = self.analysis_rows(path, root, roots, paths, lambda: self.checkpoint(batch.id))
+            for _, result in rows:
+                result.pop("consumed", None)
+            self.save_rows(batch.id, rows, replace_id=item.id)
+            return
         options = batch.request.get("options", {})
         if item.status in {"ready", "queued", "validating", "importing"}:
             if not item.candidate.get("files"):
@@ -642,6 +723,8 @@ class Installations:
                 if item.game_id
                 else "ready"
             )
+            if not item.game_id and not item.candidate.get("files"):
+                item.status = "reanalyzing"
             item.phase, item.error, item.attempts, item.next_retry = item.status, {}, 0, 0
             if batch.authorized:
                 batch.status = "running"
@@ -682,6 +765,35 @@ class Installations:
             batch = db.get(InstallationBatch, item.batch_id)
         if body.action == "skip":
             self.update(item.id, "ignored")
+            return {"ok": True}
+        if body.variant_source:
+            options = item.identification.get("variants", [])
+            if body.variant_source not in {o["source"] for o in options}:
+                raise ValueError("Variante non presente nell'anteprima")
+            with self.lock, self.sessions.begin() as db:
+                for option in options:
+                    variant = db.scalar(
+                        select(InstallationItem).where(
+                            InstallationItem.batch_id == batch.id,
+                            InstallationItem.source_key == option["source"],
+                        )
+                    )
+                    if (
+                        not variant
+                        or variant.sync_run_id
+                        or variant.status not in {"ignored", "awaiting_decision"}
+                    ):
+                        raise ValueError("Variante non più selezionabile: rianalizzare")
+                    variant.status = "ready" if option["source"] == body.variant_source else "ignored"
+                    variant.phase = variant.status
+                    variant.identification = {
+                        **variant.identification,
+                        "variants": [],
+                        "reason": "Variante selezionata dall'operatore",
+                    }
+                if batch.authorized:
+                    db.get(InstallationBatch, batch.id).status = "running"
+            self.wake.set()
             return {"ok": True}
         roots = self.roots(batch)
         path = allowed(item.source_key, roots)

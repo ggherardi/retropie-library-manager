@@ -263,6 +263,10 @@ def routes(service):
     def decision(item_id: str, body: InstallationDecision):
         return service.decision(item_id, body)
 
+    @router.post("/items/{item_id}/reanalyze", status_code=202)
+    def reanalyze(item_id: str):
+        return service.reanalyze(item_id)
+
     @router.post("/items/{item_id}/retry")
     def retry(item_id: str):
         service.retry_item(item_id)
