@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from uuid import uuid4
@@ -16,11 +17,11 @@ from backend.config import PROJECT
 from backend.db import Device, Game, SyncPresence, SyncRun
 from backend.remote_fs import diagnostics
 from backend.ssh_connection import SSHConnection, ensure_key, probe, trust
-from backend.sync_engine import SyncCancelled, build_plan, perform_sync
+from backend.sync_engine import SyncCancelled, SyncPaused, build_plan, perform_sync
 from backend.sync_schemas import DeviceInput, SyncConfirm, SyncControl, SyncInput, TrustInput
 
 logger = logging.getLogger("rlm")
-BUSY = {"preparing", "queued", "running", "cancelling", "retry_wait"}
+BUSY = {"preparing", "queued", "running", "cancelling", "pausing", "retry_wait"}
 
 
 class DeviceService:
@@ -29,6 +30,7 @@ class DeviceService:
         self.lock = lock
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sftp-sync")
         self.stop = threading.Event()
+        self.progress_clock = {}
         self.connect = SSHConnection
         self.game_guard: Callable[..., list] = lambda games, config, connection: []
         self.collection_guard: Callable[..., str] = lambda games, options: ""
@@ -113,10 +115,24 @@ class DeviceService:
             run.error = str(exc)
 
     def checkpoint(self, run_id, progress):
+        if self.stop.is_set():
+            raise ValueError("Server arrestato: parziali conservati per il retry")
+        current = time.monotonic()
+        stamp, phase, file = self.progress_clock.get(run_id, (0, None, None))
+        if (
+            current - stamp < 0.2
+            and phase == progress.get("phase")
+            and file == progress.get("file")
+            and "report" not in progress
+        ):
+            return
+        self.progress_clock[run_id] = (current, progress.get("phase"), progress.get("file"))
         with self.sessions.begin() as db:
             run = db.get(SyncRun, run_id)
             if run.status == "cancelling":
                 raise SyncCancelled()
+            if run.status == "pausing":
+                raise SyncPaused()
             if self.stop.is_set():
                 raise ValueError("Server arrestato: parziali conservati per il retry")
             if "report" in progress:
@@ -130,6 +146,8 @@ class DeviceService:
                     run = db.get(SyncRun, run_id)
                     if run.status == "cancelling":
                         raise SyncCancelled()
+                    if run.status == "pausing":
+                        raise SyncPaused()
                     run.status = "running"
                     plan = run.plan
                     device_id = run.device_id
@@ -179,6 +197,10 @@ class DeviceService:
                 except Exception:
                     logger.warning("Diagnostica finale non disponibile per %s", device_id)
                 return
+            except SyncPaused:
+                with self.sessions.begin() as db:
+                    db.get(SyncRun, run_id).status = "paused"
+                return
             except SyncCancelled:
                 with self.sessions.begin() as db:
                     run = db.get(SyncRun, run_id)
@@ -193,7 +215,7 @@ class DeviceService:
                     return
                 with self.sessions.begin() as db:
                     run = db.get(SyncRun, run_id)
-                    if run.status != "cancelling":
+                    if run.status not in {"cancelling", "pausing"}:
                         run.status = "retry_wait"
                     run.error = str(exc)
                 if self.stop.wait(2**attempt):
@@ -202,6 +224,46 @@ class DeviceService:
             except Exception as exc:
                 self.failure(run_id, exc)
                 return
+
+    @staticmethod
+    def require_idle(db, device_id):
+        if db.scalar(select(SyncRun.id).where(SyncRun.device_id == device_id, SyncRun.status.in_(BUSY))):
+            raise ValueError("Dispositivo impegnato: attendere o annullare la sincronizzazione")
+
+    def confirm(self, run_id, body):
+        with self.lock, self.sessions.begin() as db:
+            run = db.get(SyncRun, run_id)
+            if not run:
+                raise HTTPException(404, "Sincronizzazione non trovata")
+            if run.status != "preview" or not run.plan.get("can_sync"):
+                raise ValueError("Anteprima non confermabile")
+            self.require_idle(db, run.device_id)
+            if run.plan["media"] and not body.media_rights_confirmed:
+                raise ValueError("Confermare i diritti sulle copertine selezionate")
+            run.plan = {**run.plan, "authorization": body.model_dump()}
+            run.status = "queued"
+        self.pool.submit(self.execute, run_id)
+        return {"id": run_id}
+
+    def control(self, run_id, body):
+        with self.lock, self.sessions.begin() as db:
+            run = db.get(SyncRun, run_id)
+            if not run:
+                raise HTTPException(404, "Sincronizzazione non trovata")
+            if body.action in {"cancel", "pause"} and run.status in BUSY:
+                run.status = "cancelling" if body.action == "cancel" else "pausing"
+            elif (
+                body.action in {"retry", "resume"}
+                and run.status in {"failed", "cancelled", "paused"}
+                and run.plan.get("authorization")
+            ):
+                self.require_idle(db, run.device_id)
+                run.status, run.error = "queued", ""
+            else:
+                raise ValueError("Azione non disponibile nello stato corrente")
+        if body.action in {"retry", "resume"}:
+            self.pool.submit(self.execute, run_id)
+        return {"ok": True}
 
     def routes(self, submit):
         router = APIRouter(prefix="/api")
@@ -332,40 +394,10 @@ class DeviceService:
 
         @router.post("/sync/runs/{run_id}/confirm")
         def confirm(run_id: str, body: SyncConfirm):
-            with self.lock, self.sessions.begin() as db:
-                run = db.get(SyncRun, run_id)
-                if not run:
-                    raise HTTPException(404, "Sincronizzazione non trovata")
-                if run.status != "preview" or not run.plan.get("can_sync"):
-                    raise ValueError("Anteprima non confermabile")
-                require_idle(db, run.device_id)
-                if run.plan["media"] and not body.media_rights_confirmed:
-                    raise ValueError("Confermare i diritti sulle copertine selezionate")
-                run.plan = {**run.plan, "authorization": body.model_dump()}
-                run.status = "queued"
-            self.pool.submit(self.execute, run_id)
-            return {"id": run_id}
+            return self.confirm(run_id, body)
 
         @router.post("/sync/runs/{run_id}/control")
         def control(run_id: str, body: SyncControl):
-            with self.lock, self.sessions.begin() as db:
-                run = db.get(SyncRun, run_id)
-                if not run:
-                    raise HTTPException(404, "Sincronizzazione non trovata")
-                if body.action == "cancel" and run.status in BUSY:
-                    run.status = "cancelling"
-                elif (
-                    body.action == "retry"
-                    and run.status in {"failed", "cancelled"}
-                    and run.plan.get("authorization")
-                ):
-                    require_idle(db, run.device_id)
-                    run.status = "queued"
-                    run.error = ""
-                else:
-                    raise ValueError("Azione non disponibile nello stato corrente")
-            if body.action == "retry":
-                self.pool.submit(self.execute, run_id)
-            return {"ok": True}
+            return self.control(run_id, body)
 
         return router

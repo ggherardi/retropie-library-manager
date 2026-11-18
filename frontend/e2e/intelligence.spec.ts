@@ -57,6 +57,7 @@ test("massive catalog UI, parent/clone preference, archive validation, reports a
     ).ok(),
   ).toBe(true);
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await page
     .getByRole("button", { name: "Cataloghi DAT", exact: true })
     .click();

@@ -17,8 +17,9 @@ test("import, edit, favorites, list, dry-run and export through the UI", async (
     `synthetic fixture ${title}`,
   );
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true }),
+    page.getByRole("heading", { name: "Aggiungi giochi", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Impostazioni", exact: true }).click();
   await page.getByLabel("Sorgenti autorizzate").fill(source);
@@ -69,14 +70,16 @@ test("import, edit, favorites, list, dry-run and export through the UI", async (
   ).toBeVisible();
   expect((await fs.readdir(destination)).length).toBe(1);
   await page.screenshot({ path: "../.runtime/ui-export.png", fullPage: true });
-  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Aggiungi giochi", exact: true })
+    .click();
   await page.screenshot({
     path: "../.runtime/ui-dashboard.png",
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
-    page.getByRole("heading", { name: "Dashboard", exact: true }),
+    page.getByRole("heading", { name: "Aggiungi giochi", exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(

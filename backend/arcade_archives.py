@@ -151,9 +151,10 @@ def matches(expected, actual):
     )
 
 
-def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None):
+def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, inventory_cache=None):
     """archives maps technical set name to path; caches only hashes, not decompressed bytes."""
     cache = {}
+    shared = inventory_cache if inventory_cache is not None else {}
     used = {}
     problems = []
     checks = []
@@ -167,16 +168,19 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None):
         if name not in cache:
             path = archives[name]
             before = path.stat()
-            sha = hashlib.sha256()
-            with path.open("rb") as stream:
-                for block in iter(lambda: stream.read(262144), b""):
-                    sha.update(block)
-                    checkpoint()
-            cache[name] = inspect_archive(path, checkpoint)
+            key = (str(path.resolve()), before.st_size, before.st_mtime_ns)
+            if key not in shared:
+                sha = hashlib.sha256()
+                with path.open("rb") as stream:
+                    for block in iter(lambda: stream.read(262144), b""):
+                        sha.update(block)
+                        checkpoint()
+                shared[key] = (inspect_archive(path, checkpoint), sha.hexdigest())
+            cache[name], archive_sha = shared[key]
             after = path.stat()
             if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
                 raise ValueError("Archivio modificato durante la validazione")
-            used[name] = {"path": str(path), "size": before.st_size, "sha256": sha.hexdigest()}
+            used[name] = {"path": str(path), "size": before.st_size, "sha256": archive_sha}
         return cache[name]
 
     main_name = entry["parent"] if mode == "merged" and entry["parent"] else entry["name"]

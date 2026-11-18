@@ -62,5 +62,6 @@ def synthetic_probe(host, port):
 
 
 app.state.devices.connect = synthetic_device
+app.state.installations.preflight = lambda *args: {"core": "synthetic-test-core", "installed": True}
 device_module.probe = synthetic_probe
 device_module.trust = lambda host, port, expected: synthetic_probe(host, port)

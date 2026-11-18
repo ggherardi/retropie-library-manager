@@ -41,6 +41,7 @@ test("filtered selection, explicit confirmation, concurrent queue, pause and res
   ).toBe(true);
   const before = (await (await request.get("/api/downloads")).json()).total;
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await page
     .getByRole("button", { name: "Game Discovery", exact: true })
     .click();
@@ -155,6 +156,7 @@ test("automatic rules remain reviewable and require confirmation", async ({
   });
   const before = (await (await request.get("/api/downloads")).json()).total;
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await page
     .getByRole("button", { name: "Game Discovery", exact: true })
     .click();

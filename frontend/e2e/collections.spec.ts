@@ -45,6 +45,7 @@ test("classics remain separate from installed games, manual collection and media
     )
     .toBe("completed");
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await page
     .getByRole("button", { name: "Da Recuperare", exact: true })
     .click();

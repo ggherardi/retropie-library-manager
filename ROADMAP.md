@@ -26,6 +26,10 @@ Acquisizione autorizzata e sincronizzazione di 97 giochi, copertine disponibili 
 
 Catalogo di 914 classici con identificatori e fonti, matching conservativo e selezione manuale; Grandi Classici, Collezione Completa e Da Recuperare; dashboard qualità, media autorizzati con anteprima/cache/correzioni e ruoli separati; raccolta EmulationStation verificata sul dispositivo, sincronizzazione incrementale e backup. Valutazione del tema TV esistente senza modifiche video. Risultati e limiti in docs/VALIDATION-INCREMENT6.md.
 
+## Incremento 7 — Installazioni unificate
+
+Aggiungi giochi come ingresso predefinito; file/cartelle browser, drag & drop e sorgenti locali; orchestrazione persistente per elemento con riconoscimento strutturale/hash/DAT, importazione idempotente, arricchimento, preflight e sincronizzazione automatica. Upload riprendibili, pausa/retry, recupero dei job e coda metadati EmulationStation. Visibilità e avvio separati dal trasferimento; navigazione semplificata con strumenti avanzati conservati. Test e collaudo reale documentati in docs/VALIDATION-INCREMENT7.md.
+
 ## Sviluppi successivi — Prove e recupero guidato
 
 - Collaudo assistito dalla **sessione locale RetroPie**, con consenso per ogni cambiamento: core/opzioni, controller, avvio e prestazioni per singolo gioco, priorità ai contenuti autorizzati già posseduti. CPS-3 e PS1 da valutare sul Pi 3 B+.

@@ -50,6 +50,7 @@ test("device identity, diagnostics, confirmed sync and unchanged repeat", async 
   ).json();
   await job(commit.id);
   await page.goto("/");
+  await page.getByText("Avanzate", { exact: true }).click();
   await page.getByRole("button", { name: "Dispositivi", exact: true }).click();
   await page
     .getByRole("button", { name: "Aggiungi dispositivo", exact: true })

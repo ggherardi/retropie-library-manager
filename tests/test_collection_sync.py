@@ -64,6 +64,22 @@ def test_collection_respects_running_es_and_unsupported_versions(tmp_path):
     assert any("disponibile in Windows" in w for w in unsupported["warnings"])
 
 
+def test_partial_collection_preserves_existing_order(tmp_path):
+    remote, game, _ = setup(tmp_path)
+    first = build_plan(remote, config(), [game], options(game, collection=True))
+    perform_sync(remote, first, "first", lambda p: None)
+    collection = next(f for f in first["gamelists"] if f["kind"] == "collection")
+    path = remote.sftp.resolve(collection["path"])
+    original = b"/home/pi/RetroPie/roms/nes/user-first.nes\n" + path.read_bytes()
+    path.write_bytes(original)
+    game._rlm_partial_collection = True
+    repeated = build_plan(remote, config(), [game], options(game, collection=True, collection_partial=True))
+    item = next(f for f in repeated["gamelists"] if f["kind"] == "collection")
+    assert item["state"] == "present"
+    assert perform_sync(remote, repeated, "repeat", lambda p: None)["transferred_bytes"] == 0
+    assert path.read_bytes() == original
+
+
 def test_remove_membership_preserves_foreign_entries_and_roms(tmp_path):
     remote, game, _ = setup(tmp_path)
     plan = build_plan(remote, config(), [game], options(game, collection=True))

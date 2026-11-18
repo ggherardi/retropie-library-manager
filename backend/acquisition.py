@@ -381,6 +381,8 @@ class Acquisition:
                 for key in ("author", "year", "genre", "description")
                 if not getattr(game, key) and getattr(entry, key)
             }
+            if game.title == Path(game.local_path).stem and entry.title and entry.title != game.title:
+                changes["title"] = entry.title
             if game.license == "Da verificare" and entry.license:
                 changes["license"] = entry.license
             if game.provenance == "Importazione locale":

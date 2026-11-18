@@ -234,6 +234,10 @@ class SyncCancelled(Exception):
     pass
 
 
+class SyncPaused(Exception):
+    """Keep verified staging for a later resume; never publish a partial group."""
+
+
 def perform_sync(connection, plan, run_id, checkpoint):
     config = plan["config"]
     diag = diagnostics(connection, config)
@@ -271,6 +275,7 @@ def perform_sync(connection, plan, run_id, checkpoint):
                 file["sha256"],
                 lambda received: checkpoint(
                     {
+                        "phase": "verifying" if received == file["size"] else "transferring",
                         "file": file["path"],
                         "file_bytes": received,
                         "file_total": file["size"],
@@ -287,7 +292,7 @@ def perform_sync(connection, plan, run_id, checkpoint):
         for group in plan["groups"]:
             checkpoint({"file": group["title"], "bytes": completed, "total": plan["required_bytes"]})
             if remote.info(group["path"]):
-                if not all(remote.hash(f["path"]) == f["sha256"] for f in group["files"]):
+                if not all(remote.hash(f["path"], lambda f=f: checkpoint({"phase": "verifying", "file": f["path"]})) == f["sha256"] for f in group["files"]):
                     raise ValueError("Gruppo remoto cambiato dopo il dry-run: " + group["title"])
                 report["skipped_files"] += len(group["files"])
                 report["games"].append({"title": group["title"], "status": "present"})
@@ -302,7 +307,7 @@ def perform_sync(connection, plan, run_id, checkpoint):
                     continue
                 transfer(file, target)
             # Revalidate every dependency immediately before atomic publication.
-            if not all(remote.hash(staging + "/" + f["relative"]) == f["sha256"] for f in group["files"]):
+            if not all(remote.hash(staging + "/" + f["relative"], lambda f=f: checkpoint({"phase": "verifying", "file": f["path"]})) == f["sha256"] for f in group["files"]):
                 raise ValueError("Verifica finale del gruppo PS1/ROM fallita")
             checkpoint({"file": group["title"], "bytes": completed, "total": plan["required_bytes"]})
             remote.rename_new(staging, group["path"])

@@ -1,5 +1,21 @@
 # Architettura
 
+## Installazioni unificate (Incremento 7)
+
+La migrazione additiva e reversibile `0006` aggiunge tre tabelle: batch, elementi e ricevute degli upload. `installations.py` è un orchestratore persistente sopra i servizi esistenti: riusa l'importazione estratta in `import_service.py`, Acquisition, MediaService, Collections e DeviceService. Non usa chiamate HTTP interne e non introduce un secondo motore SFTP. Il worker locale è seriale; i trasferimenti passano sempre dal worker seriale del servizio dispositivi, condiviso con le schermate avanzate.
+
+`identification.py` e `content_checks.py` verificano formati, header, dipendenze CUE/M3U e hash, interrogando i DAT attivi e riusando il validatore ZIP/7z. Il confronto di varianti riutilizza soltanto inventari legati a percorso, dimensione e timestamp, senza tenere ROM decompresse in memoria. Il digest del rapporto arcade è ricontrollato contro il candidato. I chip BIOS comuni non sono evidenza di identità di giochi diversi. Formati, identità, completezza e compatibilità restano campi distinti.
+
+`installation_preflight.py` legge core configurato, override e BIOS senza inizializzare emulatori. Il controllo arcade esistente verifica poi generazione DAT, core reale, dipendenze e BIOS remoto. `installation_routes.py` fornisce navigazione entro radici autorizzate e upload limitati a blocchi con checksum; ricevute persistenti gestiscono tail non committati e rename riusciti prima del commit. Le copie nell'inbox diventano sorgenti della libreria, non file temporanei eliminabili dopo l'importazione.
+
+L'orchestratore conserva gli ID dei job Media/Intelligence e SyncRun. Conferma e richieste sono idempotenti; un SyncRun completato viene riconciliato senza duplicare il gioco. Tentativi di rete riusano staging e autorizzazione; conflitti producono un nuovo piano solo dopo retry. Pausa conserva staging; cancellazione conserva gruppi pubblicati e salvataggi. Aggiornamenti del progresso SFTP sono limitati a circa cinque al secondo, salvo cambi di file/fase e rapporti, per non effettuare un commit SQLite per ogni blocco. La lettura degli hash usa prefetch SFTP limitato a 16 richieste, con memoria limitata.
+
+Un solo piano della pipeline per dispositivo può attendere la conferma interna: evita anteprime simultanee costruite sullo stesso vecchio gamelist. La sincronizzazione seleziona soltanto il gioco corrente. L'opzione `collection_partial` aggiorna i suoi riferimenti, conservando membri e ordine esterni; il flusso avanzato completo conserva il vincolo della selezione di tutti i membri.
+
+`pending_refresh` sopravvive ai riavvii. Dopo la chiusura locale di EmulationStation il worker ricostruisce il piano dai metadati correnti e riusa i controlli di integrità, backup e pubblicazione atomica. Il controllo finale di EmulationStation rimane nel motore di sincronizzazione: la cache diagnostica dell'orchestratore non autorizza una scrittura. Nessun comando SSH avvia, ferma o riavvia EmulationStation.
+
+`Installations.tsx` è il punto d'ingresso predefinito. Le API browser trasferiscono contenuti e percorsi relativi, senza simulare accesso a percorsi Windows. Anteprima e conferma avviano tutta la pipeline; i casi ambigui non bloccano gli altri. La dashboard distingue presenza PC, file remoti verificati, visibilità dichiarata e prova di avvio associata a hash/dispositivo. Stati, API, limiti e procedure di recupero sono descritti in [INSTALLATIONS.md](INSTALLATIONS.md).
+
 ## Collezioni e media (Incremento 6)
 
 La migrazione additiva congelata `0005` introduce EssentialClassic, GameCuration, MediaAsset e MediaPlan. Conserva Game, i percorsi locali, GameInsight e la storia dei trasferimenti. Il catalogo statico versionato viene importato con inserimenti multipli; la revisione SHA-256 evita riscritture a ogni avvio. Gli elenchi dei classici sono paginati con count/offset/limit SQL; il filtro delle copie possedute controlla anche l'esistenza effettiva dei file. Il modulo DAT/FTS5 mantiene i flussi massivi preesistenti.

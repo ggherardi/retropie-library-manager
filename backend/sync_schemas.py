@@ -56,6 +56,7 @@ class SyncInput(Input):
     covers: bool = False
     screenshots: bool = False
     collection: bool = False
+    collection_partial: bool = False
 
 
 class SyncConfirm(Input):
@@ -65,4 +66,4 @@ class SyncConfirm(Input):
 
 
 class SyncControl(Input):
-    action: Literal["cancel", "retry"]
+    action: Literal["cancel", "retry", "pause", "resume"]

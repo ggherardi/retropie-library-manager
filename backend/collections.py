@@ -107,7 +107,7 @@ class Collections:
         with self.sessions() as db:
             curations = {x.game_id: x for x in db.scalars(select(GameCuration))}
             insights = {x.game_id: x for x in db.scalars(select(GameInsight))}
-            if options.collection:
+            if options.collection and not options.collection_partial:
                 required = {g.id for g in db.scalars(select(Game)) if member(g, curations.get(g.id))}
                 if not required.issubset({g.id for g in games}):
                     raise ValueError("Per sincronizzare la raccolta selezionare tutti i suoi giochi presenti")
@@ -115,6 +115,7 @@ class Collections:
                 curation = curations.get(game.id)
                 insight = insights.get(game.id)
                 game._rlm_classic = member(game, curation)
+                game._rlm_partial_collection = options.collection_partial
                 game._rlm_position = curation.position if curation else 0
                 game._rlm_screenshot = insight.screenshot_path if insight else ""
         return fingerprint(
@@ -169,10 +170,10 @@ class Collections:
             result.append(value)
         return result
 
-    def match(self, run_id):
+    def match(self, run_id, game_ids=None):
         with self.sessions() as db:
             classics = list(db.scalars(select(EssentialClassic)))
-            games = list(db.scalars(select(Game)))
+            games = list(db.scalars(select(Game).where(Game.id.in_(game_ids)) if game_ids else select(Game)))
             validations = {x.game_id: x for x in db.scalars(select(ArcadeValidation))}
             entries = {
                 x.uid: x

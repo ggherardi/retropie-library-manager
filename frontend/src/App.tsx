@@ -1,4 +1,6 @@
 import Devices from "./Devices";
+import Installations from "./Installations";
+import "./installations.css";
 import Collections, { type CollectionView } from "./Collections";
 import Intelligence, { type IntelligenceView } from "./Intelligence";
 import Discovery from "./Discovery";
@@ -35,6 +37,9 @@ import {
 } from "./api";
 
 type Page =
+  | "Aggiungi giochi"
+  | "La mia libreria"
+  | "Installazioni"
   | CollectionView
   | IntelligenceView
   | "Dispositivi"
@@ -55,10 +60,13 @@ type Stats = {
   platforms: Record<string, number>;
 };
 const navigation = [
-  { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Aggiungi giochi", icon: FolderInput },
+  { label: "La mia libreria", icon: Library },
   { label: "Grandi Classici", icon: Heart },
-  { label: "Collezione Completa", icon: Library },
   { label: "Da Recuperare", icon: Search },
+  { label: "Installazioni", icon: HardDrive },
+  { label: "Dashboard", icon: LayoutDashboard },
+  { label: "Collezione Completa", icon: Library },
   { label: "Qualità e media", icon: Grid2X2 },
   { label: "Piattaforme", icon: Gamepad2 },
   { label: "Arcade", icon: Disc3 },
@@ -78,7 +86,7 @@ const navigation = [
 ] as const;
 
 export default function App() {
-  const [page, setPage] = useState<Page>("Dashboard");
+  const [page, setPage] = useState<Page>("Aggiungi giochi");
   const [collectionTransfer, setCollectionTransfer] = useState(false);
   const [platforms, setPlatforms] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<Stats>({
@@ -428,7 +436,7 @@ export default function App() {
         </a>
         <div className="nav-label">LA TUA LIBRERIA</div>
         <nav>
-          {navigation.map(({ label, icon: Icon }) => (
+          {navigation.slice(0, 5).map(({ label, icon: Icon }) => (
             <button
               key={label}
               className={page === label ? "nav-item active" : "nav-item"}
@@ -441,6 +449,19 @@ export default function App() {
               )}
             </button>
           ))}
+          <details className="advanced-navigation">
+            <summary>Avanzate</summary>
+            {navigation.slice(5).map(({ label, icon: Icon }) => (
+              <button
+                key={label}
+                className={page === label ? "nav-item active" : "nav-item"}
+                onClick={() => navigate(label)}
+              >
+                <Icon size={19} />
+                {label}
+              </button>
+            ))}
+          </details>
         </nav>
         <div className="sidebar-footer">
           <span className="online-dot" />
@@ -461,41 +482,51 @@ export default function App() {
               <div className="eyebrow">RETROPIE LIBRARY MANAGER</div>
               <h1>{page}</h1>
               <p>
-                {["Grandi Classici", "Collezione Completa", "Da Recuperare", "Qualità e media"].includes(page)
-                  ? "Copie locali, riferimenti ai classici e metadati verificabili."
-                  : page === "Dashboard"
-                  ? "Tutta la tua passione, in un solo posto."
-                  : page === "Catalogo"
-                    ? "Esplora e organizza la tua collezione."
-                    : page === "Preferiti"
-                      ? "I giochi a cui torni sempre."
-                      : page === "Importazione"
-                        ? "Aggiungi la tua collezione, una cartella alla volta."
-                        : page === "Esportazione"
-                          ? "Prepara la prossima sessione sul tuo Raspberry Pi."
-                          : page === "Impostazioni"
-                            ? "Le cartelle e le preferenze della tua libreria."
-                            : page === "Dispositivi"
-                              ? "Collega il tuo Raspberry e controllane lo stato."
-                              : page === "Sincronizzazione"
-                                ? "Confronta la libreria e trasferisci i giochi sul Raspberry."
-                                : page === "Download Manager"
-                                  ? "Segui avanzamento, verifiche e importazioni della tua coda."
-                                  : [
-                                        "Piattaforme",
-                                        "Arcade",
-                                        "Neo Geo",
-                                        "Cataloghi DAT",
-                                        "Raccolte",
-                                      ].includes(page)
-                                    ? "Cataloghi, file posseduti e compatibilità: ogni dato con la sua evidenza."
-                                    : "Gestisci i cataloghi di giochi distribuibili legalmente."}
+                {page === "Aggiungi giochi"
+                  ? "Seleziona i file e lascia proseguire l’installazione."
+                  : page === "Installazioni"
+                    ? "Coda persistente, verifiche e risultati sul Raspberry."
+                    : [
+                          "Grandi Classici",
+                          "La mia libreria",
+                          "Collezione Completa",
+                          "Da Recuperare",
+                          "Qualità e media",
+                        ].includes(page)
+                      ? "Copie locali, riferimenti ai classici e metadati verificabili."
+                      : page === "Dashboard"
+                        ? "Tutta la tua passione, in un solo posto."
+                        : page === "Catalogo"
+                          ? "Esplora e organizza la tua collezione."
+                          : page === "Preferiti"
+                            ? "I giochi a cui torni sempre."
+                            : page === "Importazione"
+                              ? "Aggiungi la tua collezione, una cartella alla volta."
+                              : page === "Esportazione"
+                                ? "Prepara la prossima sessione sul tuo Raspberry Pi."
+                                : page === "Impostazioni"
+                                  ? "Le cartelle e le preferenze della tua libreria."
+                                  : page === "Dispositivi"
+                                    ? "Collega il tuo Raspberry e controllane lo stato."
+                                    : page === "Sincronizzazione"
+                                      ? "Confronta la libreria e trasferisci i giochi sul Raspberry."
+                                      : page === "Download Manager"
+                                        ? "Segui avanzamento, verifiche e importazioni della tua coda."
+                                        : [
+                                              "Piattaforme",
+                                              "Arcade",
+                                              "Neo Geo",
+                                              "Cataloghi DAT",
+                                              "Raccolte",
+                                            ].includes(page)
+                                          ? "Cataloghi, file posseduti e compatibilità: ogni dato con la sua evidenza."
+                                          : "Gestisci i cataloghi di giochi distribuibili legalmente."}
               </p>
             </div>
             {["Dashboard", "Catalogo", "Preferiti"].includes(page) && (
               <button
                 className="primary"
-                onClick={() => navigate("Importazione")}
+                onClick={() => navigate("Aggiungi giochi")}
               >
                 <FolderInput size={18} />
                 Importa giochi
@@ -674,7 +705,13 @@ export default function App() {
             />
           )}
           {(page === "Catalogo" || page === "Preferiti") && catalog}
+          {(page === "Aggiungi giochi" || page === "Installazioni") && (
+            <Installations
+              view={page === "Aggiungi giochi" ? "add" : "queue"}
+            />
+          )}
           {[
+            "La mia libreria",
             "Grandi Classici",
             "Collezione Completa",
             "Da Recuperare",
@@ -682,9 +719,13 @@ export default function App() {
           ].includes(page) && (
             <Collections
               key={page}
-              view={page as CollectionView}
+              view={
+                page === "La mia libreria"
+                  ? "Collezione Completa"
+                  : (page as CollectionView)
+              }
               platforms={platforms}
-              onImport={() => navigate("Importazione")}
+              onImport={() => navigate("Aggiungi giochi")}
               onSync={(ids) => {
                 setSelected(ids);
                 setCollectionTransfer(true);

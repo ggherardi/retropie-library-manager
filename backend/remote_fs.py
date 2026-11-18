@@ -146,7 +146,7 @@ class SafeRemote:
             raise ValueError("File remoto troppo grande")
         return value
 
-    def hash(self, path):
+    def hash(self, path, checkpoint=lambda: None):
         info = self.info(path)
         if info is None:
             return None
@@ -154,7 +154,10 @@ class SafeRemote:
             raise ValueError("Atteso un file regolare")
         sha = hashlib.sha256()
         with self.sftp.open(self.path(path), "rb") as stream:
+            if hasattr(stream, "prefetch"):
+                stream.prefetch(info.st_size, max_concurrent_requests=16)
             for chunk in iter(lambda: stream.read(262144), b""):
+                checkpoint()
                 sha.update(chunk)
         return sha.hexdigest()
 
@@ -184,6 +187,8 @@ class SafeRemote:
         if offset:
             valid_prefix = True
             with self.sftp.open(path, "rb") as existing:
+                if hasattr(existing, "prefetch"):
+                    existing.prefetch(offset, max_concurrent_requests=16)
                 remaining = offset
                 while remaining:
                     checkpoint(0)
@@ -198,6 +203,8 @@ class SafeRemote:
         source.seek(offset)
         checkpoint(offset)
         with self.sftp.open(path, "ab" if offset else "wb") as target:
+            if hasattr(target, "set_pipelined"):
+                target.set_pipelined(True)
             while offset < size:
                 chunk = source.read(min(65536, size - offset))
                 if not chunk:
@@ -206,7 +213,7 @@ class SafeRemote:
                 offset += len(chunk)
                 checkpoint(offset)
             target.flush()
-        if self.hash(path) != expected:
+        if self.hash(path, lambda: checkpoint(size)) != expected:
             self.sftp.remove(path)
             raise ValueError("SHA-256 remoto non corrispondente")
         checkpoint(size)

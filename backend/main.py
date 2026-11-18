@@ -24,9 +24,12 @@ from backend.config import DATA, PLATFORMS, PROJECT
 from backend.db import Game, Job, Setting, make_engine, sessions
 from backend.devices import DeviceService
 from backend.exports import LocalTransport
+from backend.import_service import import_candidate
+from backend.installation_routes import routes as installation_routes
+from backend.installations import Installations
 from backend.intelligence import Intelligence
 from backend.media import MediaService
-from backend.paths import allowed, digest, local_path
+from backend.paths import allowed, local_path
 from backend.providers import ManifestProvider, download
 from backend.scanner import ScanCancelled, candidate, scan
 from backend.schemas import (
@@ -58,6 +61,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     collections = Collections(session_factory, intelligence, mutation_lock)
     media = MediaService(session_factory, data_dir, acquisition, intelligence, mutation_lock)
     devices.collection_guard = collections.prepare_sync
+    installations = Installations(session_factory, data_dir, mutation_lock, devices, acquisition, intelligence, collections, media)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -78,7 +82,9 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         acquisition.start()
         devices.start()
         intelligence.start()
+        installations.start()
         yield
+        installations.shutdown()
         devices.shutdown()
         intelligence.shutdown()
         acquisition.shutdown()
@@ -87,13 +93,15 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.6.0", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.7.0", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
     app.state.devices = devices
     app.state.intelligence = intelligence
     app.state.collections = collections
     app.state.media = media
+    app.state.installations = installations
+    app.include_router(installation_routes(installations))
     app.include_router(collections.router)
     app.include_router(media.router)
     app.include_router(intelligence.router)
@@ -103,7 +111,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         CORSMiddleware,
         allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
         allow_methods=["GET", "POST", "PUT", "PATCH"],
-        allow_headers=["Content-Type", "X-RLM-Request"],
+        allow_headers=["Content-Type", "X-RLM-Request", "X-Chunk-SHA256"],
     )
 
     @app.middleware("http")
@@ -351,19 +359,9 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 skipped = 0
                 for candidate_id in dict.fromkeys(body.candidate_ids):
                     item = candidates[candidate_id]
-                    if db.scalar(select(Game.id).where(Game.sha256 == item["sha256"])):
-                        skipped += 1
-                        continue
-                    for file in item["files"]:
-                        path = allowed(file["path"], settings()["import_roots"])
-                        if path.stat().st_size != file["size"] or digest(path) != file["sha256"]:
-                            raise ValueError(
-                                f"File cambiato dall'anteprima: {path.name}. Ripetere la scansione."
-                            )
-                    values = {k: v for k, v in item.items() if k not in {"id", "duplicate", "entrypoints"}}
-                    db.add(Game(**values, provenance=body.provenance, license=body.license))
-                    db.flush()
-                    imported += 1
+                    _, duplicate = import_candidate(db, item, settings()["import_roots"], body.provenance, body.license)
+                    skipped += int(duplicate)
+                    imported += int(not duplicate)
             return {"imported": imported, "skipped": skipped}
 
         return submit("import", operation)

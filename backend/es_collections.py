@@ -67,7 +67,16 @@ def build_collection_files(connection, remote, config, diag, manifest, games, en
     for line in (old or b"").decode("utf-8-sig").splitlines():
         if line and line not in managed_paths:
             foreign.append(line)
-    paths = list(dict.fromkeys(paths + foreign))
+    if any(getattr(game, "_rlm_partial_collection", False) for game in games):
+        # Updating one game must preserve the order of unrelated existing members.
+        retained = [
+            line
+            for line in (old or b"").decode("utf-8-sig").splitlines()
+            if line and (line not in managed_paths or line in paths)
+        ]
+        paths = list(dict.fromkeys(retained + paths))
+    else:
+        paths = list(dict.fromkeys(paths + foreign))
     content = ("\n".join(paths) + ("\n" if paths else "")).encode()
     settings_path = diag["es_root"] + "/es_settings.cfg"
     settings = remote.read(settings_path)

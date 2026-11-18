@@ -9,10 +9,18 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 1. Clonare il repository e aprire la cartella del progetto.
 2. Eseguire `Setup.cmd` per creare l'ambiente Python, installare le dipendenze bloccate e compilare il frontend.
 3. Eseguire `Start.cmd` e aprire [l'app locale](http://127.0.0.1:8000).
-4. In **Impostazioni**, aggiungere le cartelle delle ROM e una cartella esistente per le esportazioni.
-5. In **Importazione**, scansionare una cartella, esaminare candidati e segnalazioni, indicare provenienza e licenza, confermare la selezione.
+4. Aprire **Aggiungi giochi**, selezionare file o cartelle e controllare l'anteprima. Il Raspberry si configura in **Avanzate → Dispositivi**.
+5. Confermare **Installa automaticamente**: importazione, metadati, dry-run, trasferimento e verifica proseguono nella stessa coda. È disponibile anche la modalità **solo PC**. Per leggere direttamente cartelle grandi senza upload, aggiungerle in **Avanzate → Impostazioni**.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
+
+## Incremento 7 — Aggiungi giochi e installazioni automatiche
+
+Un unico flusso persistente collega selezione browser o sorgenti locali, riconoscimento del contenuto, DAT, importazione idempotente, metadati/media e sincronizzazione incrementale verificata. Ambiguità e BIOS sono separati dai giochi pronti; dischi PS1 restano gruppi completi. Pausa, ripresa, retry, errori per elemento e recupero dopo riavvio sono disponibili in **Installazioni**.
+
+Con EmulationStation aperta le ROM possono essere trasferite e i metadati rimangono in coda. L'app li applica automaticamente quando l'utente la chiude dalla console locale; non la riavvia via SSH. File installati, visibilità e avvio verificato sono stati distinti. Le funzioni precedenti sono conservate nella sezione **Avanzate**.
+
+Leggere la [guida all'installazione unificata](docs/INSTALLATIONS.md) e il [rapporto del collaudo reale](docs/VALIDATION-INCREMENT7.md), inclusi limiti CHD, DAT e BIOS.
 
 ## Incremento 6 — Grandi Classici, raccolte e media
 

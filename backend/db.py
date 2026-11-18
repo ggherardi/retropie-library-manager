@@ -294,6 +294,58 @@ class SyncRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class InstallationBatch(Base):
+    __tablename__ = "installation_batches"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    request_key: Mapped[str] = mapped_column(String(100), unique=True)
+    device_id: Mapped[str] = mapped_column(String(36), default="")
+    mode: Mapped[str] = mapped_column(String(20), default="install")
+    status: Mapped[str] = mapped_column(String(40), default="draft", index=True)
+    control: Mapped[str] = mapped_column(String(20), default="run")
+    authorized: Mapped[bool] = mapped_column(Boolean, default=False)
+    request: Mapped[dict] = mapped_column(JSON, default=dict)
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    error: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InstallationItem(Base):
+    __tablename__ = "installation_items"
+    __table_args__ = (UniqueConstraint("batch_id", "source_key"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    source_key: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(40), default="identifying", index=True)
+    phase: Mapped[str] = mapped_column(String(40), default="identifying")
+    candidate: Mapped[dict] = mapped_column(JSON, default=dict)
+    identification: Mapped[dict] = mapped_column(JSON, default=dict)
+    game_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    sync_run_id: Mapped[str] = mapped_column(String(36), default="")
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    error: Mapped[dict] = mapped_column(JSON, default=dict)
+    warnings: Mapped[list] = mapped_column(JSON, default=list)
+    enriched: Mapped[bool] = mapped_column(Boolean, default=False)
+    visibility: Mapped[str] = mapped_column(String(30), default="not_checked")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_retry: Mapped[float] = mapped_column(default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InstallationUpload(Base):
+    __tablename__ = "installation_uploads"
+    __table_args__ = (UniqueConstraint("batch_id", "relative"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    batch_id: Mapped[str] = mapped_column(String(36), index=True)
+    relative: Mapped[str] = mapped_column(Text)
+    size: Mapped[int] = mapped_column(Integer)
+    received: Mapped[int] = mapped_column(Integer, default=0)
+    sha256: Mapped[str] = mapped_column(String(64), default="")
+    chunks: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="waiting")
+
+
 def make_engine(data_dir=DATA):
     data_dir.mkdir(parents=True, exist_ok=True)
     engine = create_engine(
