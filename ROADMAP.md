@@ -46,3 +46,7 @@ Installer Windows firmato, selezione cartelle nativa, backup/ripristino guidato,
 ## Incremento 7.1 — Archivi universali (implementato)
 
 ZIP/7z console e PS1, annidamento limitato, decoder isolato, staging atomico, rianalisi dei job, varianti verificate e conservazione del formato arcade. ECM/APE e ricostruzione di descrittori mancanti restano fuori dal supporto automatico: non vengono inventate tracce o dichiarate complete immagini non verificabili.
+
+## Incremento 7.2 — ZIP, RAR e 7z (implementato)
+
+Motore 7-Zip installato e verificato per RAR4/RAR5; volumi RAR, ZIP e 7z, inventario sicuro, decodifica senza destinazioni controllate dall'archivio. Preparazione ZIP dei set arcade soltanto dopo validazione DAT, deduplica fra compressioni e mantenimento dei percorsi esistenti. Test con decoder reali, fixture testuali compresse/solid/multivolume e diagnosi conservativa ECM/APE. Dettagli in docs/VALIDATION-INCREMENT7-2.md.

@@ -93,7 +93,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.7.1", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.7.2", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
     app.state.devices = devices

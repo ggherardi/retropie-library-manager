@@ -17,10 +17,10 @@ from uuid import uuid4
 
 import py7zr
 
+from backend.archive_volumes import archive_input, external, source_parts
 from backend.paths import digest
 from backend.scanner import CUE_FILE
 
-ARCHIVES = {".zip", ".7z"}
 MAX_MEMBERS = 20000
 MAX_FILE = 8 * 1024**3
 MAX_TOTAL = 16 * 1024**3
@@ -112,11 +112,19 @@ def normalize_descriptors(root, names):
 
 def _inventory(path, checkpoint=lambda: None):
     """Metadata inspection does not extract members or trust their names as identity."""
-    if path.stat().st_size > MAX_FILE:
+    _, parts, kind, _ = source_parts(path)
+    compressed = sum(p.stat().st_size for p in parts)
+    if compressed > MAX_FILE:
         raise ValueError("Archivio oltre il limite di 8 GiB")
     result = []
-    if path.suffix.lower() == ".zip":
-        with zipfile.ZipFile(path) as archive:
+    if external(path):
+        from backend.archive_engine import inventory as engine_inventory
+
+        result = engine_inventory(path)
+        for entry in result:
+            entry["name"] = safe_name(entry["name"])
+    elif kind == "zip":
+        with archive_input(path) as source, zipfile.ZipFile(source) as archive:
             for entry in archive.infolist():
                 mode = entry.external_attr >> 16
                 if (
@@ -131,8 +139,11 @@ def _inventory(path, checkpoint=lambda: None):
                     {"name": safe_name(entry.filename), "size": entry.file_size, "directory": entry.is_dir()}
                 )
                 checkpoint()
-    elif path.suffix.lower() == ".7z":
-        with py7zr.SevenZipFile(path, "r", max_extract_size=MAX_TOTAL) as archive:
+    elif kind == "7z":
+        with (
+            archive_input(path) as source,
+            py7zr.SevenZipFile(source, "r", max_extract_size=MAX_TOTAL) as archive,
+        ):
             check_7z_resources(archive)
             if archive.needs_password():
                 raise ValueError("Archivio 7z cifrato: formato non supportato")
@@ -148,10 +159,10 @@ def _inventory(path, checkpoint=lambda: None):
                 )
                 checkpoint()
     else:
-        raise ValueError("Formato archivio non supportato: usare ZIP o 7z")
+        raise ValueError("Formato archivio non supportato: usare ZIP, RAR o 7z")
     if len(result) > MAX_MEMBERS or sum(e["size"] for e in result) > MAX_TOTAL:
         raise ValueError("Archivio oltre il limite di membri o dimensione espansa")
-    if sum(e["size"] for e in result) > max(1, path.stat().st_size) * MAX_RATIO:
+    if sum(e["size"] for e in result) > max(1, compressed) * MAX_RATIO:
         raise ValueError("Archivio bomb: rapporto di compressione oltre il limite")
     names = {}
     for member in result:
@@ -166,6 +177,55 @@ def _inventory(path, checkpoint=lambda: None):
             if str(p) != "."
         ):
             raise ValueError("Conflitto file/cartella nell'archivio")
+    return result
+
+
+def source_identity(path, checkpoint):
+    _, parts, _, _ = source_parts(path)
+    sources = [{"name": p.name, "size": p.stat().st_size, "sha256": digest(p, checkpoint)} for p in parts]
+    sha = (
+        sources[0]["sha256"]
+        if len(sources) == 1
+        else hashlib.sha256(json.dumps(sources, sort_keys=True).encode()).hexdigest()
+    )
+    return sha, sources
+
+
+def extract_members(path, entries, factory, total):
+    _, _, kind, _ = source_parts(path)
+    if external(path):
+        from backend.archive_engine import extract
+
+        extract(path, entries, factory)
+    elif kind == "zip":
+        with archive_input(path) as source, zipfile.ZipFile(source) as archive:
+            for entry in archive.infolist():
+                if entry.is_dir():
+                    continue
+                sink = factory.create(entry.filename)
+                with archive.open(entry) as stream:
+                    for block in iter(lambda: stream.read(65536), b""):
+                        sink.write(block)
+                if hasattr(sink, "close"):
+                    sink.close()
+    else:
+        with (
+            archive_input(path) as source,
+            py7zr.SevenZipFile(source, "r", max_extract_size=total) as archive,
+        ):
+            archive.extractall(factory=factory)
+
+
+def hash_members(path):
+    from backend.arcade_archives import DigestFactory
+
+    entries = _inventory(path)
+    expected = {e["name"]: e["size"] for e in entries if not e["directory"]}
+    factory = DigestFactory(expected, lambda: None)
+    extract_members(path, entries, factory, sum(expected.values()))
+    result = {name: sink.result() for name, sink in factory.products.items()}
+    if set(result) != set(expected) or any(result[n]["size"] != size for n, size in expected.items()):
+        raise ValueError("Contenuto archivio incompleto")
     return result
 
 
@@ -217,7 +277,21 @@ def run_worker(request, checkpoint, work=None):
                 raise ValueError("Decoder arrestato: limite di memoria/CPU o archivio non valido")
             value = json.loads(output.read_text(encoding="utf8"))
             if value.get("error") or process.returncode:
-                raise ValueError("Analisi archivio: " + value.get("error", "decoder non riuscito"))
+                message = value.get("error", "decoder non riuscito")
+                if request.get("path") and any(
+                    kind in message
+                    for kind in ("BadZipFile", "Bad7zFile", "EOFError", "LZMAError", "CrcError")
+                ):
+                    try:
+                        _, parts, _, joined = source_parts(Path(request["path"]))
+                    except ValueError:
+                        parts, joined = [], False
+                    if joined or len(parts) > 1:
+                        message = (
+                            "Archivio suddiviso incompleto o corrotto: verificare che tutti i volumi siano presenti "
+                            "e integri, incluso quello finale, poi Rianalizza. Dettagli: " + message
+                        )
+                raise ValueError("Analisi archivio: " + message)
             return value["output"]
         finally:
             if process.poll() is None:
@@ -363,8 +437,7 @@ class ArchiveStore:
 
     def _prepare(self, path, entries, budget, depth=0, staging=None):
         budget.reserve(entries, depth)
-        initial = path.stat()
-        sha = digest(path, budget.check)
+        sha, sources = source_identity(path, budget.check)
         folder = self.root / f"v{VERSION}-{sha}"
         if folder.is_symlink() or not folder.resolve().is_relative_to(self.root):
             raise ValueError("Cache archivio fuori dalla directory autorizzata")
@@ -400,36 +473,22 @@ class ArchiveStore:
         factory = FileFactory(files, expected, budget)
         try:
             try:
-                if path.suffix.lower() == ".zip":
-                    with zipfile.ZipFile(path) as archive:
-                        for entry in archive.infolist():
-                            if entry.is_dir():
-                                continue
-                            sink = factory.create(entry.filename)
-                            with archive.open(entry) as stream:
-                                for block in iter(lambda: stream.read(65536), b""):
-                                    sink.write(block)
-                            sink.close()
-                else:
-                    with py7zr.SevenZipFile(path, "r", max_extract_size=total) as archive:
-                        archive.extractall(factory=factory)
+                extract_members(path, entries, factory, total)
             finally:
                 factory.close()
             if set(factory.products) != set(expected) or any(
                 sink.count != expected[name] for name, sink in factory.products.items()
             ):
                 raise ValueError("Archivio incompleto: dimensioni dei membri non corrispondenti")
-            final = path.stat()
-            if (initial.st_size, initial.st_mtime_ns) != (final.st_size, final.st_mtime_ns) or digest(
-                path, budget.check
-            ) != sha:
-                raise ValueError("Archivio originale cambiato durante la preparazione")
+            if source_identity(path, budget.check) != (sha, sources):
+                raise ValueError("Archivio originale o volumi cambiati durante la preparazione")
             normalized = normalize_descriptors(files, expected)
             report = {
                 "normalized_descriptors": normalized,
                 "version": VERSION,
                 "archive_sha256": sha,
-                "compressed_bytes": initial.st_size,
+                "compressed_bytes": sum(p["size"] for p in sources),
+                "source_files": sources,
                 "expanded_bytes": total,
                 "members": len(entries),
                 "files": {

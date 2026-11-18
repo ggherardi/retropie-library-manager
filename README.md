@@ -14,6 +14,14 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 7.2 — ZIP, RAR e 7z
+
+**Aggiungi giochi** prepara e installa automaticamente ZIP, RAR4/RAR5 e 7z, anche annidati o suddivisi nei volumi supportati. Selezionare tutti i volumi insieme: non occorre estrarli o rinominarli. `Setup.cmd` gestisce il motore 7-Zip richiesto per RAR. I set arcade RAR/7z vengono preparati in ZIP soltanto dopo la verifica DAT; i giochi già catalogati mantengono i percorsi esistenti.
+
+I job precedenti possono essere rianalizzati senza ricaricare i file. Archivi cifrati, volumi mancanti, corruzione e formati non convertibili hanno diagnosi esplicite. Aprire un RAR o 7z non rende automaticamente installabile un disco ECM/APE privo di CUE.
+
+[Formati, motore, limiti e volumi](docs/ARCHIVES.md) · [Collaudo 7.2](docs/VALIDATION-INCREMENT7-2.md).
+
 ## Incremento 7.1 — Archivi ZIP e 7z senza estrazione manuale
 
 Trascinare direttamente ZIP o 7z in **Aggiungi giochi**. L'app prepara i giochi console, raggruppa BIN/CUE e multidisco, analizza archivi annidati e conserva gli ZIP arcade identificati tramite DAT. Documenti e BIOS non diventano giochi; gli originali rimangono intatti. **Rianalizza** aggiorna i job già caricati e la pipeline autorizzata riprende automaticamente.

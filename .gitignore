@@ -56,3 +56,15 @@ authorized_keys*
 *.pem
 *.key
 build/
+
+# Additional source archives, volumes and save files (Increment 7.2)
+*.rar
+*.r[0-9][0-9]*
+*.z[0-9][0-9]*
+*.7z.[0-9]*
+*.zip.[0-9]*
+*.ecm
+*.ape
+*.srm
+*.sav
+*.state*

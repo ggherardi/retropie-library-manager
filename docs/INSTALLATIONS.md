@@ -2,7 +2,7 @@
 
 ## Uso quotidiano
 
-Dalla versione 0.7.1 è possibile selezionare direttamente ZIP/7z: [preparazione automatica degli archivi](ARCHIVES.md), senza estrazione manuale. I job già caricati possono essere rianalizzati.
+Dalla versione 0.7.2 è possibile selezionare direttamente ZIP, RAR e 7z, anche multivolume: [preparazione automatica degli archivi](ARCHIVES.md), senza estrazione manuale. I job già caricati possono essere rianalizzati.
 
 Aprire `Start.cmd` e http://127.0.0.1:8000. **Aggiungi giochi** è la pagina iniziale.
 

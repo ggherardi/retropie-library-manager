@@ -75,6 +75,13 @@ class DigestFactory(py7zr.WriterFactory):
 
 
 def inspect_archive(path, checkpoint=lambda: None):
+    from backend.archive_volumes import source_parts
+
+    first, parts, kind, joined = source_parts(path)
+    if kind == "rar" or len(parts) > 1:
+        from backend.archive_import import run_worker
+
+        return run_worker({"operation": "hashes", "path": str(first)}, checkpoint)
     if path.stat().st_size > MAX_BYTES:
         raise ValueError("Archivio troppo grande")
     result = {}

@@ -54,7 +54,7 @@ def windows_job(pid):
         raise ctypes.WinError(ctypes.get_last_error())
     info = Extended()
     info.basic.flags = 0x2000 | 0x100 | 0x200 | 0x8 | 0x2
-    info.basic.processes = 2  # Windows venv launcher plus its Python interpreter
+    info.basic.processes = 3  # venv launcher, Python interpreter and installed 7-Zip decoder
     info.basic.process_time = CPU_SECONDS * 10_000_000
     info.process_memory = info.job_memory = MEMORY_LIMIT
     process = None
@@ -101,6 +101,12 @@ def main(job):
             setattr(module, name, value)
         if request["operation"] == "inventory":
             output = module._inventory(Path(request["path"]))
+        elif request["operation"] == "hashes":
+            output = module.hash_members(Path(request["path"]))
+        elif request["operation"] == "arcade":
+            from backend.archive_repack import repack
+
+            output = repack(Path(request["data"]), request["archives"])
         else:
             budget = module.Budget(lambda: None)
             budget.bytes, budget.members = request["bytes"], request["members"]

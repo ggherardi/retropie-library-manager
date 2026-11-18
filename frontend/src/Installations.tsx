@@ -60,6 +60,8 @@ type Item = {
       expanded_bytes?: number;
       sha256?: string;
       contents?: string[];
+      volumes?: string[];
+      repacked_zip?: boolean;
     };
     associated_files?: string[];
     ignored_members?: { name: string; reason: string }[];
@@ -526,11 +528,11 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
               }}
             >
               <UploadCloud size={38} />
-              <h3>Trascina ZIP, 7z, file o cartelle</h3>
+              <h3>Trascina ZIP, RAR, 7z, file o cartelle</h3>
               <p>
                 Preparo automaticamente i giochi contenuti negli archivi,
-                inclusi BIN/CUE. Non serve estrarli: gli originali restano
-                invariati.
+                inclusi BIN/CUE. Per archivi suddivisi, seleziona tutti i
+                volumi. Non serve estrarli: gli originali restano invariati.
               </p>
               <div className="actions">
                 <button onClick={() => fileInput.current?.click()}>
@@ -975,8 +977,20 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                           <p>
                             {item.identification.archive.extracted
                               ? "File preparati automaticamente; originale conservato"
-                              : "Archivio arcade conservato per il core, senza estrazione"}
+                              : "Archivio originale conservato; il set viene verificato prima dell’installazione"}
                           </p>
+                          {item.identification.archive.repacked_zip && (
+                            <p>
+                              Set verificato tramite DAT e preparato in ZIP per
+                              il core.
+                            </p>
+                          )}
+                          {!!item.identification.archive.volumes?.length && (
+                            <p>
+                              Volumi:{" "}
+                              {item.identification.archive.volumes.join(", ")}
+                            </p>
+                          )}
                           {item.identification.archive.expanded_bytes !==
                             undefined && (
                             <p>

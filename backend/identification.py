@@ -46,7 +46,7 @@ class Identifier:
     def __init__(self, sessions):
         self.sessions = sessions
 
-    def archive(self, path, roots, checkpoint, selected_uid="", mode="non-merged"):
+    def archive(self, path, roots, checkpoint, selected_uid="", mode="non-merged", archives_override=None):
         before = path.stat()
         inventory = inspect_archive(path, checkpoint)
         stat = path.stat()
@@ -129,7 +129,7 @@ class Identifier:
                 for name in catalog:
                     if not re.fullmatch(r"[A-Za-z0-9_.-]{1,150}", name) or name in {".", ".."}:
                         continue
-                    for extension in (".zip", ".7z"):
+                    for extension in (".rar", ".7z", ".zip"):
                         sibling = path.parent / (name + extension)
                         if sibling.is_file():
                             archives[name] = allowed(str(sibling), roots)
@@ -146,7 +146,12 @@ class Identifier:
                 ):
                     main = entry.parent if selected_mode == "merged" and entry.parent else entry.name
                     report = validate_set(
-                        record(entry), catalog, {**archives, main: path}, selected_mode, checkpoint, shared
+                        record(entry),
+                        catalog,
+                        {**archives, **(archives_override or {}), main: path},
+                        selected_mode,
+                        checkpoint,
+                        shared,
                     )
                     report.update(
                         source_id=source.id,
@@ -187,6 +192,8 @@ class Identifier:
         initial = path.stat()
         decision = decision or {}
         check = format_check(path)
+        if archive_result is not None:
+            check["kind"] = "archive"
         info = {
             "title": path.stem,
             "platform": check["platform"],

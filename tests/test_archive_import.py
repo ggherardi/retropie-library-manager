@@ -482,7 +482,7 @@ def test_summary_cannot_overwrite_concurrent_retry(setup):
     assert result["status"] == "running" and result["counts"] == {"reanalyzing": 1}
 
 
-@pytest.mark.parametrize("extension", [".rar", ".ecm", ".ape"])
+@pytest.mark.parametrize("extension", [".ecm", ".ape"])
 def test_unsupported_container_has_explicit_diagnostic(setup, extension):
     _, client, source, _, _ = setup
     path = source / ("unsupported" + extension)

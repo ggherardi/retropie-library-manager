@@ -14,8 +14,8 @@ from sqlalchemy import select
 
 from backend.acquisition import record
 from backend.acquisition_schemas import EnrichInput
-from backend.archive_import import ARCHIVES
 from backend.archive_pipeline import ArchiveAnalyzer, review
+from backend.archive_volumes import is_archive
 from backend.collection_schemas import MediaApplyInput, MediaPreviewInput
 from backend.db import (
     ArcadeValidation,
@@ -202,19 +202,19 @@ class Installations:
         return result
 
     def analysis_rows(self, path, root, roots, paths, checkpoint):
-        if path.suffix.lower() in {".rar", ".tar", ".gz", ".bz2", ".xz", ".tgz", ".cab", ".ecm", ".ape"}:
+        if path.suffix.lower() in {".tar", ".gz", ".bz2", ".xz", ".tgz", ".cab", ".ecm", ".ape"}:
             return [
                 (
                     path,
                     review(
                         path,
                         "Formato " + path.suffix.upper() + " non supportato per l'installazione. "
-                        "Sono supportati ZIP/7z con ROM o immagini complete e descrittori originali. "
+                        "Sono supportati ZIP/RAR/7z con ROM o immagini complete e descrittori originali. "
                         "Nessuna estrazione o conversione manuale richiesta dall'app.",
                     ),
                 )
             ]
-        if path.suffix.lower() in ARCHIVES:
+        if is_archive(path):
             return self.archives.analyze(path, root, roots, checkpoint)
         return [(path, self.identifier.identify(path, root, roots, paths, checkpoint))]
 
@@ -798,6 +798,12 @@ class Installations:
         roots = self.roots(batch)
         path = allowed(item.source_key, roots)
         root = next(Path(r).resolve() for r in roots if path.is_relative_to(Path(r).resolve()))
+        if is_archive(path) and body.entry_uid:
+            rows = self.archives.analyze(path, root, roots, lambda: self.checkpoint(batch.id), body.model_dump())
+            self.save_rows(batch.id, rows, replace_id=item.id)
+            self.summarize(batch.id)
+            self.wake.set()
+            return {"ok": True}
         result = self.identifier.identify(path, root, roots, [path], decision=body.model_dump())
         result.pop("consumed")
         self.update(item.id, **result, error={})
