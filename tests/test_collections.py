@@ -313,3 +313,16 @@ def test_local_media_requires_authorized_root_and_retains_previous(library, tmp_
     assert all(Path(x["path"]).is_file() for x in history)
     with app.state.sessions() as db:
         assert db.get(GameInsight, gid).test_status == "untested"
+
+
+def test_recovery_priority_orders_existing_classics_before_alphabetic(library):
+    app, client, _ = library
+    with app.state.sessions.begin() as db:
+        rows = list(db.scalars(select(EssentialClassic).order_by(EssentialClassic.title.desc()).limit(2)))
+        first, second = rows
+        first.details = {**first.details, "recovery_priority": 1}
+        second.details = {**second.details, "recovery_priority": 2}
+        expected = [first.id, second.id]
+    result = client.get("/api/collections/classics?page_size=2").json()
+    assert [r["id"] for r in result["items"]] == expected
+    assert result["items"][0]["details"]["recovery_priority"] == 1

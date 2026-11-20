@@ -346,7 +346,8 @@ class Collections:
                 x["classic_id"] for x in self.owned() if x["classic_id"] and x["availability"] == "present"
             }
             with self.sessions() as db:
-                query = select(EssentialClassic).order_by(EssentialClassic.title, EssentialClassic.id)
+                priority = func.coalesce(EssentialClassic.details["recovery_priority"].as_integer(), 1000000)
+                query = select(EssentialClassic).order_by(priority, EssentialClassic.title, EssentialClassic.id)
                 if q:
                     query = query.where(EssentialClassic.title.icontains(q, autoescape=True))
                 if platform:

@@ -40,6 +40,7 @@ type Classic = {
   present: boolean;
   compatibility: string;
   details: {
+    recovery_priority?: number;
     selection_reason: string;
     developer: string | null;
     publisher: string | null;
@@ -517,6 +518,7 @@ export default function Collections({
                     Da recuperare · non installato
                   </span>
                   <h3>{game.title}</h3>
+                  {game.details.recovery_priority && <p>Priorità {game.details.recovery_priority}</p>}
                   <p>
                     {platforms[game.platform]} ·{" "}
                     {game.year ?? "Anno sconosciuto"}
