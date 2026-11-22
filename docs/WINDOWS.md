@@ -37,7 +37,7 @@ La migrazione aggiunge autore ai giochi e tabelle per Discovery, provider, piani
 
 ## Verifiche
 
-`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Alla prima esecuzione installare il browser di test con `cd frontend` e `npx playwright install chromium`. I test browser usano la porta 18001, un database separato e file sintetici. Le verifiche live dei provider sono documentate nella guida ai provider.
+`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Alla prima esecuzione installare il browser di test con `cd frontend` e `npx playwright install chromium webkit`. I test browser usano la porta 18001, un database separato e file sintetici. Le verifiche live dei provider sono documentate nella guida ai provider.
 
 Il servizio locale usa la porta 8000. Se occupata, identificare l'applicazione che la utilizza prima di avviare un'altra istanza. Gli errori di runtime sono registrati in `data/application.log`, con rotazione. Il controllo delle dipendenze frontend è disponibile con `npm audit` nella cartella `frontend`.
 
@@ -49,3 +49,10 @@ L'assistente richiede il client OpenSSH di Windows (`ssh.exe`). SSH/SFTP dell'ap
 Per aggiornare dall'Incremento 2: arrestare il server, salvare data, eseguire git pull --ff-only e Setup.cmd, quindi Start.cmd. La migrazione 0003 preserva libreria, provider e download e aggiunge dispositivi/sincronizzazioni. Il test completo resta Check.cmd. Le fixture SSH/SFTP E2E risiedono sotto .runtime/e2e-data/ssh-fixture e non si connettono alla LAN.
 
 Le operazioni SSH richiedono Python 3 sul Raspberry e un server OpenSSH con Ed25519/SFTP. Il progetto non installa né aggiorna pacchetti sul dispositivo. Per i problemi di autenticazione consultare SSH.md e TROUBLESHOOTING.md.
+
+
+## Accesso LAN (0.8)
+
+Dopo l'aggiornamento con `Setup.cmd`, `Start.cmd` usa `backend.launch`: loopback iniziale, poi modalità LAN solo con amministratore configurato e connessione Windows Privata. Porta e preferenza LAN sono persistenti. L'app non modifica firewall, profili o router. La [guida LAN](LAN.md) descrive il consenso amministrativo, la regola limitata alla subnet, il login, il QR e le opzioni HTTPS/tunnel.
+
+File nuovi in `data/`: `access-admin.json` (hash scrypt, mai password in chiaro), `access.sqlite3` (digest delle sessioni e tentativi), `network.json` (preferenze non segrete). Sono esclusi da Git. Salvare anche questi file nel backup privato dell'app; un loro ripristino può riattivare sessioni ancora valide, quindi revocarle con il reset password se necessario. Per creare una nuova password dal PC ospite, fermare il server ed eseguire `Start.cmd --reset-password`: il terminale non mostra i caratteri e revoca tutte le sessioni. Non usare questa opzione durante trasferimenti.

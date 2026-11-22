@@ -54,3 +54,8 @@ Motore 7-Zip installato e verificato per RAR4/RAR5; volumi RAR, ZIP e 7z, invent
 ## Incremento 7.3 — Esperienza installazioni (implementato)
 
 Proiezione backend condivisa degli stati, completamenti basati sui rapporti verificati, distinzione metadati/visibilità/avvio, errori strutturali e interventi, schede compatte, filtri prima della paginazione, avanzamento misurabile o indeterminato, riepiloghi senza duplicati certi, cronologia completa e polling coordinato. Rigenerazione una sola volta del piano in caso di gamelist cambiato, senza aggirare conferme e verifiche. Collaudo con job reali e test documentati in docs/VALIDATION-INCREMENT7-3.md.
+
+
+## Accesso LAN protetto — 0.8 (implementato)
+
+Password amministratore locale, sessioni con scadenza e revoca, CSRF e rate limiting persistenti; binding LAN esplicito su rete Privata, porta persistente, QR con IP verificato. Script firewall con consenso amministrativo e ambito limitato. Layout touch e hash upload senza dipendenza dal secure context. HTTPS locale opzionale; nessuna esposizione pubblica o servizio cloud richiesto. Collaudo e limiti reali documentati in docs/VALIDATION-LAN.md.

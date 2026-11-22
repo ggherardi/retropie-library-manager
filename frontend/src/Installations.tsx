@@ -7,7 +7,7 @@ import {
   LoaderCircle,
   UploadCloud,
 } from "lucide-react";
-import { api, bytes } from "./api";
+import { api, bytes, requestHeaders, requestId, sha256Hex } from "./api";
 
 type Issue = {
   phase: string;
@@ -461,7 +461,7 @@ export default function Installations({
               mode,
               device_id: deviceId,
               recursive: true,
-              request_key: crypto.randomUUID(),
+              request_key: requestId(),
             });
       if (
         current.uploads.length !== files.length ||
@@ -496,17 +496,13 @@ export default function Installations({
           const block = await file.file
             .slice(offset, offset + 4 * 1024 ** 2)
             .arrayBuffer();
-          const sha = Array.from(
-            new Uint8Array(await crypto.subtle.digest("SHA-256", block)),
-          )
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
+          const sha = await sha256Hex(block);
           const response = await fetch(
             `/api/installations/${current.id}/uploads/${target.id}?offset=${offset}`,
             {
               method: "PUT",
               headers: {
-                "X-RLM-Request": "1",
+                ...requestHeaders(),
                 "Content-Type": "application/octet-stream",
                 "X-Chunk-SHA256": sha,
               },
@@ -514,6 +510,8 @@ export default function Installations({
               signal: abort.signal,
             },
           );
+          if (response.status === 401)
+            window.dispatchEvent(new Event("rlm-auth-required"));
           if (!response.ok)
             throw new Error(
               (await response.json()).detail ||
@@ -536,7 +534,7 @@ export default function Installations({
         recursive,
         mode,
         device_id: deviceId,
-        request_key: crypto.randomUUID(),
+        request_key: requestId(),
       });
       chooseBatch(result.id);
       setLocalPaths([]);

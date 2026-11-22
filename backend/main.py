@@ -9,13 +9,14 @@ from uuid import uuid4
 
 from alembic import command
 from alembic.config import Config
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
-from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from backend.acquisition import Acquisition
 from backend.acquisition_schemas import EnrichInput
@@ -28,6 +29,7 @@ from backend.import_service import import_candidate
 from backend.installation_routes import routes as installation_routes
 from backend.installations import Installations
 from backend.intelligence import Intelligence
+from backend.lan_access import Access
 from backend.media import MediaService
 from backend.paths import allowed, local_path
 from backend.providers import ManifestProvider, download
@@ -61,7 +63,9 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     collections = Collections(session_factory, intelligence, mutation_lock)
     media = MediaService(session_factory, data_dir, acquisition, intelligence, mutation_lock)
     devices.collection_guard = collections.prepare_sync
-    installations = Installations(session_factory, data_dir, mutation_lock, devices, acquisition, intelligence, collections, media)
+    installations = Installations(
+        session_factory, data_dir, mutation_lock, devices, acquisition, intelligence, collections, media
+    )
 
     @asynccontextmanager
     async def lifespan(app):
@@ -93,7 +97,7 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
         logger.removeHandler(handler)
         handler.close()
 
-    app = FastAPI(title="RetroPie Library Manager", version="0.7.3", lifespan=lifespan)
+    app = FastAPI(title="RetroPie Library Manager", version="0.8.0", lifespan=lifespan)
     app.state.sessions = session_factory
     app.state.acquisition = acquisition
     app.state.devices = devices
@@ -106,35 +110,22 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
     app.include_router(media.router)
     app.include_router(intelligence.router)
     app.include_router(acquisition.router)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
+    access = Access(data_dir)
+    app.state.access = access
+    app.include_router(access.routes())
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
-        allow_methods=["GET", "POST", "PUT", "PATCH"],
-        allow_headers=["Content-Type", "X-RLM-Request", "X-Chunk-SHA256"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Content-Type", "X-RLM-Request", "X-Chunk-SHA256", "X-RLM-CSRF"],
     )
+    app.middleware("http")(access.guard)
 
-    @app.middleware("http")
-    async def local_requests(request: Request, call_next):
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-            if request.headers.get("X-RLM-Request") != "1":
-                return JSONResponse({"detail": "Header locale richiesto"}, status_code=403)
-            origin = request.headers.get("origin")
-            if origin and origin not in {
-                str(request.base_url).rstrip("/"),
-                "http://127.0.0.1:8000",
-                "http://localhost:8000",
-                "http://127.0.0.1:5173",
-                "http://localhost:5173",
-            }:
-                return JSONResponse({"detail": "Origine non autorizzata"}, status_code=403)
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"
-        )
-        return response
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, exc):
+        if request.url.path.startswith("/api/access/"):
+            return JSONResponse({"detail": "Campi di accesso non validi"}, status_code=422)
+        return await request_validation_exception_handler(request, exc)
 
     @app.exception_handler(ValueError)
     async def invalid_input(request, exc):
@@ -359,7 +350,9 @@ def create_app(data_dir: Path = DATA) -> FastAPI:
                 skipped = 0
                 for candidate_id in dict.fromkeys(body.candidate_ids):
                     item = candidates[candidate_id]
-                    _, duplicate = import_candidate(db, item, settings()["import_roots"], body.provenance, body.license)
+                    _, duplicate = import_candidate(
+                        db, item, settings()["import_roots"], body.provenance, body.license
+                    )
                     skipped += int(duplicate)
                     imported += int(not duplicate)
             return {"imported": imported, "skipped": skipped}

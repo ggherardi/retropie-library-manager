@@ -1,3 +1,28 @@
+import { sha256 } from "@noble/hashes/sha2.js";
+let csrf = "";
+export function setCSRF(value: string) {
+  csrf = value;
+}
+export function requestHeaders() {
+  return { "X-RLM-Request": "1", ...(csrf ? { "X-RLM-CSRF": csrf } : {}) };
+}
+export async function sha256Hex(block: ArrayBuffer): Promise<string> {
+  const digest = globalThis.crypto?.subtle
+    ? new Uint8Array(await crypto.subtle.digest("SHA-256", block))
+    : sha256(new Uint8Array(block));
+  return Array.from(digest)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+export function requestId() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 export type Game = {
   id: number;
   title: string;
@@ -64,9 +89,11 @@ export async function api<T>(
 ): Promise<T> {
   const response = await fetch(`/api${path}`, {
     method,
-    headers: { "Content-Type": "application/json", "X-RLM-Request": "1" },
+    headers: { "Content-Type": "application/json", ...requestHeaders() },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  if (response.status === 401)
+    window.dispatchEvent(new Event("rlm-auth-required"));
   if (!response.ok) {
     const error = await response
       .json()

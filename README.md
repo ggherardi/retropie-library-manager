@@ -12,7 +12,13 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 4. Aprire **Aggiungi giochi**, selezionare file o cartelle e controllare l'anteprima. Il Raspberry si configura in **Avanzate → Dispositivi**.
 5. Confermare **Installa automaticamente**: importazione, metadati, dry-run, trasferimento e verifica proseguono nella stessa coda. È disponibile anche la modalità **solo PC**. Per leggere direttamente cartelle grandi senza upload, aggiungerle in **Avanzate → Impostazioni**.
 
-La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
+La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. Per impostazione iniziale l'app ascolta solo su loopback. La modalità LAN richiede una password scelta dall'utente e una rete Windows Privata. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Dopo aver configurato la password, anche localhost e OpenAPI richiedono una sessione. Le chiamate di modifica richiedono `X-RLM-Request: 1` e il token CSRF della sessione.
+
+## Accesso da smartphone e altri PC — versione 0.8
+
+In **Avanzate → Impostazioni → Accesso da smartphone e altri PC**, configurare sul PC ospite la password amministratore iniziale, poi abilitare la LAN privata. `Start.cmd` conserva porta e preferenze. La pagina mostra gli IP reali, il profilo Windows e un QR senza credenziali. Nessuna regola firewall viene applicata automaticamente.
+
+**HTTP sulla LAN non cifra password, sessioni e file.** Usare solo la propria rete fidata; per riservatezza configurare HTTPS locale con certificato attendibile oppure un tunnel privato. Non configurare port forwarding. [Configurazione, sicurezza e recupero](docs/LAN.md).
 
 ## Incremento 7.3 — Installazioni chiare e compatte
 
@@ -177,8 +183,8 @@ Le migrazioni si applicano all'avvio. Per applicarle manualmente dalla radice de
 
 ## Verifiche e sviluppo
 
-`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Prima della prima prova browser installare Chromium con `cd frontend` e `npx playwright install chromium`. I test usano esclusivamente file sintetici temporanei. Le prove E2E usano un database separato in `.runtime/e2e-data`, la porta 18001 e un trasporto HTTPS sintetico definito esclusivamente in `tests/e2e_app.py`. L’app avviata con Start.cmd usa il trasporto di rete reale.
+`Check.cmd` esegue Ruff, mypy, pytest, ESLint, TypeScript, Vitest, build e Playwright. Prima della prima prova browser installare Chromium con `cd frontend` e `npx playwright install chromium webkit`. I test usano esclusivamente file sintetici temporanei. Le prove E2E usano un database separato in `.runtime/e2e-data`, la porta 18001 e un trasporto HTTPS sintetico definito esclusivamente in `tests/e2e_app.py`. L’app avviata con Start.cmd usa il trasporto di rete reale.
 
-Per lo sviluppo avviare il backend con `.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`. In una seconda console, nella cartella `frontend`, eseguire `npm run dev`. Vite inoltra le chiamate API al backend.
+Per lo sviluppo avviare il backend con `.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`. In una seconda console, nella cartella `frontend`, eseguire `npm run dev`. Vite inoltra le chiamate API al backend. Usare una cartella dati di sviluppo separata con `RLM_DATA_DIR`, senza la password e i dati di produzione; il flusso autenticato viene collaudato sulla build servita da FastAPI.
 
 Consultare [architettura](docs/ARCHITECTURE.md) e [roadmap](ROADMAP.md).

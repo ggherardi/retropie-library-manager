@@ -78,7 +78,7 @@ Le API sono documentate con schemi in `/docs`: discovery, provider/refresh, pian
 
 ## Sicurezza e confine di fiducia
 
-- Binding loopback, header Host verificato, header personalizzato sulle mutazioni e controllo Origin/CORS.
+- Loopback iniziale; LAN esplicita con password, rete Privata e verifica subnet. Host verificato, sessioni, token CSRF, header applicazione e controllo Origin/CORS sulle mutazioni.
 - Validazione Pydantic, query parametrizzate, limiti su selezioni, paginazione e stringhe.
 - Percorsi canonicalizzati, contenimento dopo risoluzione, esclusione di link simbolici e riferimenti esterni CUE/M3U.
 - Copertine servite da radici autorizzate, CSP e protezione MIME sniffing.
@@ -86,7 +86,7 @@ Le API sono documentate con schemi in `/docs`: discovery, provider/refresh, pian
 - ZIP controllati per traversal, link, cifratura, CRC, numero di file, dimensione espansa e rapporto di compressione.
 - Manifest personalizzati come dichiarazione esplicita di fiducia dell'operatore, che verifica l'autorizzazione della fonte.
 
-Il confine di fiducia è il computer locale. Un processo con accesso diretto ai dati può modificarli. L'esposizione LAN richiederebbe autenticazione, TLS e autorizzazioni dedicate.
+Il computer ospite e il suo amministratore sono il confine di fiducia. Un processo con accesso diretto ai dati può modificarli. La LAN usa l'autenticazione descritta sotto; HTTP non fornisce riservatezza e richiede una rete fidata. HTTPS o un tunnel privato sono necessari per proteggere il trasporto.
 
 ## Persistenza e recupero
 
@@ -151,3 +151,18 @@ Le API mantengono i campi precedenti e aggiungono `experience`, `cards`, `experi
 React usa richieste coordinate al riepilogo e al job selezionato, con un solo aggiornamento per coppia in corso e timeout successivo alla risposta (2,5 s, 10 s a pagina nascosta). Cambi di selezione invalidano risposte vecchie; sessionStorage conserva il job senza credenziali. Le schede native details/summary conservano l'espansione durante il polling e supportano la tastiera. Nessuna percentuale di durata è ricavata dal numero di fasi: byte reali soltanto durante il trasferimento e indicatore indeterminato durante analisi/verifica.
 
 Una modifica del gamelist dopo il dry-run autorizzato consente una rigenerazione automatica per elemento. Il nuovo piano rilegge lo stato remoto e passa nuovamente da preflight, controlli di spazio, hash, conflitti e protezione EmulationStation. Il vecchio run resta in cronologia. Al secondo conflitto si richiede un'azione esplicita; nessuna sovrascrittura viene autorizzata da questo meccanismo.
+
+
+## Accesso autenticato e LAN privata (0.8)
+
+`lan_access.Access` precede le route e il mount SPA. Una password iniziale si configura soltanto da loopback con nonce casuale, prima di consentire la LAN. Scrypt usa N=131072, r=8, p=1, salt casuale di 16 byte e digest di 32 byte. Due calcoli simultanei al massimo limitano la memoria dell'autenticazione. Nessuna password predefinita, salvata in chiaro o inclusa nelle risposte di validazione.
+
+Il cookie casuale di 256 bit è HttpOnly, SameSite=Strict e Secure con HTTPS. SQLite conserva soltanto il suo SHA-256, un CSRF separato e le scadenze: 30 minuti di inattività, otto ore assolute. Login ruota il cookie, logout revoca il digest, reset locale revoca tutte le sessioni. Il limite persistente è cinque tentativi per IP in cinque minuti e trenta globali al minuto. Una sola istanza del server resta obbligatoria.
+
+Dopo il bootstrap tutte le API, OpenAPI e i file utente richiedono autenticazione; sono pubblici soltanto health, stato/login/setup e gli asset necessari a mostrare il login. Le mutazioni richiedono header applicazione, Origin consentita e CSRF di sessione. Il setup non viene esposto alla LAN. Gli header forwarded non cambiano la fiducia nel peer e Uvicorn disabilita proxy_headers.
+
+`backend.launch` legge la configurazione persistente e sceglie 127.0.0.1 oppure 0.0.0.0; quest'ultimo solo con password e interfaccia effettiva Privata. Il middleware ricontrolla peer nella subnet e profilo dell'interfaccia, senza fidarsi di un IP dichiarato dal browser. Gli indirizzi derivano da Windows, non da IP fissi o servizi Internet. Il firewall dedicato limita anche programma, interfaccia, indirizzo locale e subnet. La scoperta delle interfacce è conservata in cache per trenta secondi; il firewall applica comunque il profilo corrente del sistema operativo.
+
+Il frontend conserva il CSRF solo in memoria, recupera la sessione al refresh e torna al login dopo un 401. Upload a blocchi e tutte le API passano gli stessi controlli. La SHA-256 dei blocchi usa WebCrypto quando disponibile e il modulo SHA-256 locale di `@noble/hashes` quando il contesto HTTP LAN non espone SubtleCrypto. Gli ID delle richieste usano getRandomValues, disponibile anche senza randomUUID. Non viene disabilitato alcun controllo d'integrità per mobile.
+
+La guida operativa [LAN.md](LAN.md) distingue autenticazione e cifratura, le opzioni TLS/tunnel, i limiti browser e la verifica fisica da quella simulata. Il trasporto SSH verso il Raspberry e la pipeline di installazione non cambiano.

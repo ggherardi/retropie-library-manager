@@ -1,0 +1,89 @@
+.auth-page {
+  max-width: 520px;
+  margin: 8vh auto;
+  padding: 24px;
+  color: #edf3ff;
+}
+.auth-page form,
+.access-settings form {
+  display: grid;
+  gap: 16px;
+}
+.auth-page label,
+.access-settings label {
+  display: grid;
+  gap: 8px;
+}
+.auth-page input,
+.access-settings input {
+  min-height: 44px;
+  max-width: 100%;
+}
+.auth-page button,
+.access-settings button {
+  min-height: 44px;
+}
+.auth-warning {
+  background: #3a301d;
+  border: 1px solid #8d7647;
+  color: #ffe0a1;
+  padding: 14px;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.access-settings {
+  margin-top: 24px;
+  min-width: 0;
+}
+.access-settings p,
+.access-settings a {
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.access-settings .checkline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.access-settings .checkline input {
+  min-height: 0;
+  width: 20px;
+  height: 20px;
+}
+.access-qr {
+  background: white;
+  padding: 8px;
+  border-radius: 12px;
+  max-width: 100%;
+}
+@media (max-width: 640px) {
+  button,
+  select,
+  input {
+    min-height: 44px;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 0;
+  }
+  .sidebar nav {
+    align-items: center;
+  }
+  .sidebar nav button {
+    min-height: 44px;
+    padding: 12px;
+  }
+  .panel,
+  .main-content,
+  main {
+    min-width: 0;
+  }
+  .settings-panel textarea,
+  .settings-panel input {
+    max-width: 100%;
+  }
+  .auth-page {
+    margin: 20px auto;
+    padding: 20px;
+  }
+}

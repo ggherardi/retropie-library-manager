@@ -1,4 +1,5 @@
 import Devices from "./Devices";
+import AccessSettings from "./Access";
 import Installations from "./Installations";
 import "./installations.css";
 import Collections, { type CollectionView } from "./Collections";
@@ -86,7 +87,7 @@ const navigation = [
 ] as const;
 
 export default function App() {
-  const [page, setPage] = useState<Page>("Aggiungi giochi");
+  const [page, setPage] = useState<Page>(location.hash === "#access" ? "Impostazioni" : "Aggiungi giochi");
   const [collectionTransfer, setCollectionTransfer] = useState(false);
   const [platforms, setPlatforms] = useState<Record<string, string>>({});
   const [stats, setStats] = useState<Stats>({
@@ -1024,6 +1025,7 @@ export default function App() {
                 Salva impostazioni
               </button>
               <hr />
+              <AccessSettings />
               <h3>Archivio locale</h3>
               <p className="path">{settings.data_dir}</p>
               <p className="muted">
