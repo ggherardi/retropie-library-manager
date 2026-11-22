@@ -17,6 +17,7 @@ from backend.acquisition_schemas import EnrichInput
 from backend.archive_pipeline import ArchiveAnalyzer, review
 from backend.archive_volumes import is_archive
 from backend.collection_schemas import MediaApplyInput, MediaPreviewInput
+from backend.config import PLATFORMS
 from backend.db import (
     ArcadeValidation,
     CatalogRun,
@@ -34,6 +35,7 @@ from backend.db import (
 from backend.devices import BUSY
 from backend.identification import Identifier, enumerate_files
 from backend.import_service import import_candidate
+from backend.installation_experience import cards, diagnose, metrics, view
 from backend.installation_preflight import preflight
 from backend.paths import allowed
 from backend.sync_schemas import SyncConfirm, SyncControl, SyncInput
@@ -83,7 +85,8 @@ def failure(phase, file, exc):
         "cause": reason,
         "operation": phase,
         "remedy": remedy,
-        "retryable": True,
+        "retryable": diagnose({"status": "failed", "error": {"cause": reason}})[1] == "intervention",
+        "code": diagnose({"status": "failed", "error": {"cause": reason}})[0],
     }
 
 
@@ -635,6 +638,7 @@ class Installations:
                 progress.update(
                     report=run.report,
                     reports=history,
+                    metadata_review=False,
                     free_bytes=run.report.get("space_after", {}).get("free"),
                 )
                 self.update(
@@ -646,6 +650,21 @@ class Installations:
                     next_retry=time.time() + 15 if deferred else 0,
                 )
             elif run.status in {"failed", "paused", "cancelled"}:
+                if "gamelist cambiato dopo il dry-run" in run.error.lower() and batch.authorized:
+                    replans = item.progress.get("metadata_replans", 0)
+                    if replans < 1:
+                        self.update(
+                            item.id,
+                            "preparing_sync",
+                            sync_run_id="",
+                            error={},
+                            progress={
+                                **progress,
+                                "metadata_replans": replans + 1,
+                                "superseded_plans": [*progress.get("superseded_plans", []), run.id],
+                            },
+                        )
+                        return
                 transient = any(
                     s in run.error.lower()
                     for s in (
@@ -701,7 +720,10 @@ class Installations:
     def retry_item(self, item_id):
         with self.lock, self.sessions.begin() as db:
             item = db.get(InstallationItem, item_id)
-            if not item or item.status not in {"failed", "waiting_device", "paused", "cancelled"}:
+            if not item or (
+                item.status not in {"failed", "waiting_device", "paused", "cancelled"}
+                and not (item.status == "installed" and item.progress.get("metadata_review"))
+            ):
                 raise ValueError("Riprova non disponibile per questo elemento")
             run = db.get(SyncRun, item.sync_run_id) if item.sync_run_id else None
             # Reuse authorized staging after transport failures; conflicts need a fresh preview.
@@ -726,6 +748,7 @@ class Installations:
             if not item.game_id and not item.candidate.get("files"):
                 item.status = "reanalyzing"
             item.phase, item.error, item.attempts, item.next_retry = item.status, {}, 0, 0
+            item.progress = {**item.progress, "metadata_replans": 0}
             if batch.authorized:
                 batch.status = "running"
         self.wake.set()
@@ -799,7 +822,9 @@ class Installations:
         path = allowed(item.source_key, roots)
         root = next(Path(r).resolve() for r in roots if path.is_relative_to(Path(r).resolve()))
         if is_archive(path) and body.entry_uid:
-            rows = self.archives.analyze(path, root, roots, lambda: self.checkpoint(batch.id), body.model_dump())
+            rows = self.archives.analyze(
+                path, root, roots, lambda: self.checkpoint(batch.id), body.model_dump()
+            )
             self.save_rows(batch.id, rows, replace_id=item.id)
             self.summarize(batch.id)
             self.wake.set()
@@ -810,7 +835,7 @@ class Installations:
         self.wake.set()
         return {"ok": True}
 
-    def detail(self, batch_id, page=1, page_size=100):
+    def detail(self, batch_id, page=1, page_size=100, section="all", sort="recent"):
         with self.sessions() as db:
             batch = db.get(InstallationBatch, batch_id)
             if not batch:
@@ -823,8 +848,6 @@ class Installations:
                     select(InstallationItem)
                     .where(InstallationItem.batch_id == batch_id)
                     .order_by(InstallationItem.created_at, InstallationItem.id)
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
                 )
             )
             result = []
@@ -852,6 +875,10 @@ class Installations:
                     if item.identification.get("chosen") and item.progress.get("reports")
                     else "Avvio non verificato",
                 )
+                run = db.get(SyncRun, item.sync_run_id) if item.sync_run_id else None
+                value["platform_label"] = PLATFORMS.get(value["platform"], "Console da identificare")
+                value["experience"] = view(value, record(batch), record(run) if run else None)
+                value["installed"] = value["experience"]["files_verified"]
                 result.append(value)
             uploads = (
                 [
@@ -863,10 +890,31 @@ class Installations:
                 if batch.status == "draft"
                 else []
             )
+            projected = cards(result)
+            if section not in {"all", "active", "attention", "completed"} or sort not in {
+                "recent",
+                "title",
+                "status",
+            }:
+                raise ValueError("Filtro o ordinamento non valido")
+            selected = [i for i in projected if section == "all" or i["experience"]["section"] == section]
+            selected.sort(
+                key=lambda i: (
+                    i["title"].casefold()
+                    if sort == "title"
+                    else i["experience"]["state"]
+                    if sort == "status"
+                    else i["created_at"]
+                ),
+                reverse=sort == "recent",
+            )
             return {
                 **record(batch),
                 "counts": dict(counts),
-                "items": result,
+                "experience_summary": metrics(result, [record(batch)]),
+                "cards": selected[(page - 1) * page_size : page * page_size],
+                "card_total": len(selected),
+                "items": result[(page - 1) * page_size : page * page_size],
                 "total": sum(counts.values()),
                 "uploads": uploads,
             }

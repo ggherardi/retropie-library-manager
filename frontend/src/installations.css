@@ -309,3 +309,256 @@
     gap: 0;
   }
 }
+
+/* Installation experience 7.3: compact, labelled states; color is supplementary. */
+.installations .install-overview {
+  position: sticky;
+  top: 12px;
+  z-index: 8;
+  padding: 16px 20px;
+  background: #141e30f5;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 28px #080d1880;
+}
+.install-counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin: 12px 0;
+  color: #c5d1e5;
+  font-size: 13px;
+}
+.install-counters b {
+  color: #f2f5fc;
+  font-size: 20px;
+  margin-right: 4px;
+}
+.install-overview .install-current {
+  font-size: 13px;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.install-overview small {
+  color: #b3c2da;
+}
+.install-overview progress {
+  display: block;
+  margin: 8px 0;
+}
+.install-hero .install-steps {
+  padding: 6px 0;
+}
+.install-drop {
+  padding: 18px;
+  margin-top: 8px;
+}
+.install-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+.install-tabs button[aria-current="page"] {
+  background: #323b63;
+  border-color: #a7a8ff;
+  color: white;
+}
+.installations .install-item {
+  display: block;
+  padding: 0;
+  margin: 8px 0;
+  border: 1px solid #344159;
+  border-left: 4px solid var(--state-color);
+  border-radius: 10px;
+  background: #121b2b;
+}
+.tone-blue {
+  --state-color: #91bdff;
+}
+.tone-green {
+  --state-color: #8ce1b6;
+}
+.tone-neutral {
+  --state-color: #c0cada;
+}
+.tone-yellow {
+  --state-color: #f3d084;
+}
+.tone-red {
+  --state-color: #ffa4ab;
+}
+.install-card-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  list-style: none;
+}
+.install-card-summary::-webkit-details-marker {
+  display: none;
+}
+.installations .install-thumb {
+  width: 42px;
+  height: 48px;
+  min-height: 0;
+  border-radius: 7px;
+}
+.install-thumb img {
+  height: 100%;
+}
+.install-card-title {
+  flex: 1;
+  min-width: 0;
+}
+.install-card-title h3 {
+  font-size: 15px;
+  margin: 0 0 3px;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.install-card-title > span {
+  font-size: 12px;
+  color: #b4c1d7;
+}
+.install-card-status {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+  max-width: 38%;
+}
+.install-card-status strong {
+  font-size: 13px;
+  color: var(--state-color);
+}
+.install-card-status small {
+  font-size: 11px;
+  color: #b5c4dd;
+}
+.install-chevron {
+  flex-shrink: 0;
+  color: #acbad2;
+  transition: transform 0.15s;
+}
+.install-card[open] > summary .install-chevron {
+  transform: rotate(180deg);
+}
+.install-item-content {
+  padding: 0 16px 16px;
+  border-top: 1px solid #344159;
+}
+.install-guidance {
+  margin-top: 14px;
+  color: #e2eaf7;
+}
+.install-guidance p {
+  color: #c6d2e7;
+}
+.installations .install-json {
+  max-height: 400px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.5;
+  background: #0b1220;
+  padding: 12px;
+  border-radius: 8px;
+}
+.installations button:focus-visible,
+.installations summary:focus-visible,
+.installations select:focus-visible {
+  outline: 3px solid #d5caff;
+  outline-offset: 3px;
+}
+.installations .install-progress {
+  min-width: 60px;
+}
+.install-card-summary > .install-progress {
+  width: 90px;
+}
+.install-history {
+  scrollbar-width: thin;
+}
+.install-accessories {
+  margin-top: 18px;
+  color: #aebdd4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .install-chevron,
+  .spin {
+    animation: none;
+    transition: none;
+  }
+}
+@media (max-width: 640px) {
+  .installations .install-overview {
+    top: 0;
+    padding: 12px;
+  }
+  .install-overview .section-heading {
+    font-size: 12px;
+  }
+  .install-overview .section-heading span {
+    font-size: 11px;
+  }
+  .install-counters {
+    gap: 8px 12px;
+    font-size: 11px;
+  }
+  .install-counters b {
+    font-size: 16px;
+  }
+  .install-card-summary {
+    gap: 8px;
+    padding: 10px 8px;
+    flex-wrap: wrap;
+  }
+  .install-card-title h3 {
+    font-size: 13px;
+  }
+  .install-card-status {
+    max-width: 42%;
+  }
+  .install-card-status strong {
+    font-size: 11px;
+  }
+  .installations .install-thumb {
+    width: 30px;
+    height: 36px;
+  }
+  .install-card-summary > .install-progress {
+    width: 100%;
+  }
+  .install-tabs button {
+    padding: 9px;
+    font-size: 12px;
+  }
+}
+
+.install-selection > summary {
+  color: #c8d5ec;
+  font-size: 14px;
+  padding: 8px 0;
+}
+.install-selection[open] > summary {
+  margin-bottom: 12px;
+}
+.install-tabs button {
+  width: auto;
+  flex: 1 1 auto;
+}
+.install-card,
+.install-card-title {
+  min-width: 0;
+}
+.install-hero h2 {
+  font-size: 24px;
+}
+
+.installations .install-tabs {
+  flex-direction: row;
+  padding: 0;
+}
+.installations .install-tabs button {
+  width: auto;
+}

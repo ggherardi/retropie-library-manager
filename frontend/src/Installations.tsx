@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
+  ChevronDown,
   FolderOpen,
   Gamepad2,
-  HardDrive,
   LoaderCircle,
   UploadCloud,
 } from "lucide-react";
@@ -29,8 +29,67 @@ type Candidate = {
     problems: { set: string; file: string; reason: string }[];
   };
 };
+export type Experience = {
+  state: string;
+  label: string;
+  section: string;
+  tone: string;
+  phase: string;
+  code: string;
+  message: string;
+  next_step: string;
+  actions: string[];
+  progress: {
+    kind: "bytes" | "indeterminate" | "none" | "count";
+    value?: number;
+    total?: number;
+  };
+  files_verified: boolean;
+  visibility: string;
+  launched: boolean;
+};
+type ExperienceSummary = {
+  identified: number;
+  total: number;
+  completed: number;
+  active: number;
+  intervention: number;
+  blocked: number;
+  operations: number;
+  unresolved: number;
+  scanning: boolean;
+  current: (Experience & { id: string; batch_id: string; title: string })[];
+  progress: Experience["progress"];
+};
+export function Progress({
+  progress,
+  label,
+}: {
+  progress: Experience["progress"];
+  label: string;
+}) {
+  if (progress.kind === "none") return null;
+  return (
+    <div className="install-progress">
+      <progress
+        aria-label={label}
+        {...(progress.kind === "indeterminate"
+          ? {}
+          : { value: progress.value || 0, max: progress.total || 1 })}
+      />
+      {progress.kind === "bytes" && (
+        <small>
+          {bytes(progress.value || 0)} / {bytes(progress.total || 0)}
+        </small>
+      )}
+    </div>
+  );
+}
 type Item = {
   id: string;
+  experience: Experience;
+  platform_label: string;
+  companions?: Item[];
   title: string;
   platform: string;
   status: string;
@@ -100,6 +159,9 @@ type Batch = {
   authorized: boolean;
   created_at: string;
   counts: Record<string, number>;
+  cards: Item[];
+  card_total: number;
+  experience_summary: ExperienceSummary;
   items: Item[];
   total: number;
   uploads: Upload[];
@@ -112,7 +174,11 @@ type Device = {
   config: { name: string; host: string };
   diagnostics: { space?: { free: number } };
 };
-type Summary = { batches: Batch[]; devices: Device[] };
+type Summary = {
+  batches: Batch[];
+  devices: Device[];
+  experience_summary?: ExperienceSummary;
+};
 type Source = { name: string; path: string; directory: boolean };
 type Picked = { file: File; relative: string };
 export const statusLabel: Record<string, string> = {
@@ -252,10 +318,18 @@ function DecisionControls({
   );
 }
 
-export default function Installations({ view }: { view: "add" | "queue" }) {
+export default function Installations({
+  view,
+  onOpenLibrary,
+}: {
+  view: "add" | "queue";
+  onOpenLibrary?: (id: number) => void;
+}) {
   const [summary, setSummary] = useState<Summary>({ batches: [], devices: [] });
   const [batch, setBatch] = useState<Batch | null>(null);
-  const [batchId, setBatchId] = useState("");
+  const [batchId, setBatchId] = useState(
+    () => sessionStorage.getItem("rlm-installation-batch") || "",
+  );
   const [page, setPage] = useState(1);
   const [deviceId, setDeviceId] = useState("");
   const [mode, setMode] = useState("install");
@@ -274,37 +348,69 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
   const [localPaths, setLocalPaths] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("recent");
+  const [technicalPage, setTechnicalPage] = useState(1);
+  const [technicalItems, setTechnicalItems] = useState<Item[] | null>(null);
+  const refreshing = useRef<Promise<void> | null>(null);
+  const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
-  const refresh = useCallback(async () => {
-    const result = await api<Summary>("/installations");
-    setSummary(result);
-    setError((previous) =>
-      previous.startsWith("Backend non disponibile:") ? "" : previous,
-    );
-    if (batchId)
-      setBatch(
-        await api<Batch>(`/installations/${batchId}?page=${page}&page_size=40`),
+  const refresh = useCallback(() => {
+    if (refreshing.current) return refreshing.current;
+    const epoch = generation.current;
+    const task = (async () => {
+      const [result, detail] = await Promise.all([
+        api<Summary>("/installations"),
+        batchId
+          ? api<Batch>(
+              `/installations/${batchId}?page=${page}&page_size=40&section=${filter}&sort=${sort}`,
+            )
+          : Promise.resolve(null),
+      ]);
+      if (epoch !== generation.current) return;
+      setSummary(result);
+      setBatch(detail);
+      setError((previous) =>
+        previous.startsWith("Backend non disponibile:") ? "" : previous,
       );
-  }, [batchId, page]);
+    })();
+    refreshing.current = task;
+    void task
+      .finally(() => {
+        if (refreshing.current === task) refreshing.current = null;
+      })
+      .catch(() => {});
+    return task;
+  }, [batchId, page, filter, sort]);
   useEffect(() => {
     let alive = true;
-    const poll = () =>
-      refresh().catch((e) => {
+    let timer: ReturnType<typeof setTimeout>;
+    const epoch = ++generation.current;
+    refreshing.current = null;
+    const poll = async () => {
+      try {
+        await refresh();
+      } catch (e) {
         if (alive)
           setError(
             `Backend non disponibile: ${String(e)}. La coda è conservata; riprovo automaticamente.`,
           );
-      });
+      }
+      if (alive)
+        timer = setTimeout(() => void poll(), document.hidden ? 10000 : 2500);
+    };
     void poll();
-    const timer = setInterval(poll, 1500);
     return () => {
       alive = false;
-      clearInterval(timer);
+      generation.current = epoch + 1;
+      clearTimeout(timer);
     };
   }, [refresh]);
+  useEffect(() => {
+    sessionStorage.setItem("rlm-installation-batch", batchId);
+  }, [batchId]);
   useEffect(() => {
     api<{ roots: string[] }>("/installations/sources")
       .then((r) => setRoots(r.roots))
@@ -336,6 +442,9 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
     setBatch(null);
     setPage(1);
     setRights(false);
+    setTechnicalPage(1);
+    setTechnicalItems(null);
+    setFilter("all");
   };
   const upload = () =>
     perform("Caricamento della selezione", async () => {
@@ -438,17 +547,93 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
         controller.current?.abort();
       await api(`/installations/${batchId}/control`, "POST", { action });
     });
-  const device =
-    summary.devices.find((d) => d.id === deviceId) ||
-    summary.devices.find((d) => d.is_default) ||
-    summary.devices[0];
-  const totals = summary.batches.reduce<Record<string, number>>((all, b) => {
-    for (const [key, count] of Object.entries(b.counts))
-      all[key] = (all[key] || 0) + count;
-    return all;
-  }, {});
+  const totals = summary.experience_summary;
+  const activeJob = totals?.current[0];
   return (
     <div className="installations">
+      <section
+        className="panel install-overview"
+        aria-label="Avanzamento installazioni"
+      >
+        <div className="section-heading">
+          <strong>
+            {totals?.active || totals?.scanning
+              ? "Installazione in lavorazione"
+              : "Stato delle installazioni"}
+          </strong>
+          <span>
+            {totals?.operations || 0} operazioni · {totals?.identified || 0}{" "}
+            giochi identificati · {totals?.total || 0} copie distinte
+          </span>
+        </div>
+        <div className="install-counters" aria-live="polite">
+          <span>
+            <b>{totals?.completed || 0}</b> completati
+          </span>
+          <span>
+            <b>{totals?.active || 0}</b> in corso
+          </span>
+          <span>
+            <b>{totals?.intervention || 0}</b> richiedono intervento
+          </span>
+          <span>
+            <b>{totals?.blocked || 0}</b> bloccati
+          </span>
+        </div>
+        {busy === "Caricamento della selezione" ? (
+          <>
+            <p>Caricamento dei file sul PC · {uploadProgress.file}</p>
+            <Progress
+              progress={{
+                kind: "bytes",
+                value: uploadProgress.done,
+                total: uploadProgress.total,
+              }}
+              label="Caricamento della selezione"
+            />
+          </>
+        ) : (
+          <>
+            <p className="install-current">
+              {activeJob
+                ? `${activeJob.phase} · ${activeJob.title}`
+                : totals?.scanning
+                  ? "Analisi della selezione: il numero di giochi sarà noto al termine."
+                  : `${totals?.completed || 0} di ${totals?.total || 0} copie con operazione completata`}
+            </p>
+            {totals && (
+              <Progress
+                progress={totals.progress}
+                label="Avanzamento complessivo"
+              />
+            )}
+            {activeJob?.progress.kind === "bytes" && (
+              <Progress
+                progress={activeJob.progress}
+                label="Trasferimento corrente"
+              />
+            )}
+          </>
+        )}
+        {(totals?.current.length || 0) > 1 && (
+          <details>
+            <summary>Operazioni concorrenti ({totals?.current.length})</summary>
+            {totals?.current.map((current) => (
+              <p key={current.id}>
+                <button onClick={() => chooseBatch(current.batch_id)}>
+                  {current.title} · {current.phase}
+                </button>
+              </p>
+            ))}
+          </details>
+        )}
+        {!!totals?.unresolved && (
+          <small>
+            {totals.unresolved} copie ancora da identificare: non vengono unite
+            per somiglianza del titolo.
+          </small>
+        )}
+      </section>
       {error && (
         <div className="error" role="alert">
           {error}
@@ -463,7 +648,8 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
         </div>
       )}
       {view === "add" && (
-        <>
+        <details className="install-selection" open={!batch}>
+          <summary>Seleziona ZIP, RAR, 7z, file o cartelle</summary>
           <section className="install-hero panel">
             <span className="eyebrow">DAL PC AL RASPBERRY</span>
             <h2>I tuoi giochi, in un solo percorso.</h2>
@@ -475,7 +661,6 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
               <span>01 · Seleziona</span>
               <span>02 · Controlla</span>
               <span>03 · Installa</span>
-              <span>04 · Prova sulla console</span>
             </div>
             <div className="install-options">
               <label>
@@ -668,47 +853,8 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
               )}
             </details>
           </section>
-        </>
+        </details>
       )}
-      <section className="install-summary">
-        <div className="panel">
-          <small>IN CODA / ANALISI</small>
-          <strong>
-            {(totals.ready || 0) +
-              (totals.queued || 0) +
-              (totals.preparing_sync || 0)}
-          </strong>
-        </div>
-        <div className="panel">
-          <small>DA VERIFICARE</small>
-          <strong>{totals.awaiting_decision || 0}</strong>
-        </div>
-        <div className="panel">
-          <small>TRASFERIMENTO / HASH</small>
-          <strong>
-            {(totals.transferring || 0) + (totals.verifying || 0)}
-          </strong>
-        </div>
-        <div className="panel">
-          <small>INSTALLATI</small>
-          <strong>{totals.installed || 0}</strong>
-        </div>
-        <div className="panel">
-          <small>ATTESA EMULATIONSTATION</small>
-          <strong>{totals.pending_refresh || 0}</strong>
-        </div>
-        <div className="panel">
-          <small>FALLITI</small>
-          <strong>{totals.failed || 0}</strong>
-        </div>
-      </section>
-      <p className="muted">
-        <HardDrive size={16} />
-        {device?.diagnostics.space
-          ? `${bytes(device.diagnostics.space.free)} liberi · ${device.config.name} · ultima diagnostica`
-          : "Lo spazio sul Raspberry verrà verificato durante il dry-run."}{" "}
-        I contatori descrivono le operazioni, inclusi i tentativi ripetuti.
-      </p>
       <div className="install-layout">
         <aside className="panel install-history">
           <h3>Installazioni</h3>
@@ -735,7 +881,8 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                       ? "cancelled"
                       : b.status
                 ] || b.status}{" "}
-                · {b.total} elementi
+                · {b.experience_summary?.total || 0} giochi ·{" "}
+                {b.experience_summary?.operations || 0} operazioni
               </span>
             </button>
           ))}
@@ -775,10 +922,13 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                 </p>
               )}
               {batch.error.cause && (
-                <div className="error">
+                <details className="install-notice">
+                  <summary>
+                    La selezione si è fermata. Mostra la causa e le indicazioni.
+                  </summary>
                   {batch.error.cause}
                   <p>{batch.error.remedy}</p>
-                </div>
+                </details>
               )}
               {batch.status === "scanning" && (
                 <p>
@@ -851,51 +1001,177 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                   </p>
                 </div>
               )}
-              <div className="actions">
-                <button
-                  onClick={() =>
-                    control(batch.control === "pause" ? "resume" : "pause")
-                  }
-                >
-                  {batch.control === "pause" ? "Riprendi" : "Pausa"}
-                </button>
-                <button onClick={() => control("retry")}>Riprova errori</button>
-                <button onClick={() => control("cancel")}>Annulla coda</button>
-                <select
-                  aria-label="Filtro installazioni"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                >
-                  <option value="">Tutti gli elementi della pagina</option>
-                  <option value="awaiting_decision">Da verificare</option>
-                  <option value="failed">Falliti</option>
-                  <option value="installed">Installati</option>
-                </select>
+              <div className="actions install-batch-controls">
+                {batch.control !== "run" && (
+                  <button onClick={() => control("resume")}>Riprendi</button>
+                )}
+                {batch.experience_summary.active > 0 &&
+                  batch.control === "run" && (
+                    <>
+                      <button onClick={() => control("pause")}>Pausa</button>
+                      <button onClick={() => control("cancel")}>
+                        Annulla coda
+                      </button>
+                    </>
+                  )}
+                <label>
+                  Ordina{" "}
+                  <select
+                    aria-label="Ordina installazioni"
+                    value={sort}
+                    onChange={(e) => {
+                      setSort(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="recent">Più recenti</option>
+                    <option value="title">Titolo</option>
+                    <option value="status">Stato</option>
+                  </select>
+                </label>
               </div>
-              {batch.items
-                .filter((i) => !filter || i.status === filter)
-                .map((item) => (
-                  <article className="install-item" key={item.id}>
-                    <div className="install-thumb">
-                      {item.cover_url ? (
-                        <img src={item.cover_url} alt="" />
-                      ) : (
-                        <Gamepad2 size={26} />
-                      )}
-                    </div>
-                    <div className="install-item-content">
-                      <h3>{item.title}</h3>
-                      <p>
-                        {item.platform || "Piattaforma da identificare"} ·{" "}
-                        {bytes(
-                          item.candidate.size || item.identification.size || 0,
+              <nav className="install-tabs" aria-label="Sezioni installazioni">
+                {[
+                  ["active", "In corso"],
+                  ["attention", "Serve intervento"],
+                  ["completed", "Completati"],
+                  ["all", "Tutti"],
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    aria-current={filter === key ? "page" : undefined}
+                    onClick={() => {
+                      setFilter(key);
+                      setPage(1);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </nav>
+              <p className="muted">
+                {batch.card_total} schede · {batch.experience_summary.total}{" "}
+                copie distinte in questa selezione ·{" "}
+                {batch.experience_summary.operations} operazioni
+              </p>
+              {batch.cards.map((item) => (
+                <article
+                  className={`install-item tone-${item.experience.tone}`}
+                  key={item.id}
+                >
+                  <details className="install-card">
+                    <summary className="install-card-summary">
+                      <span className="install-thumb">
+                        {item.cover_url ? (
+                          <img src={item.cover_url} alt="" />
+                        ) : (
+                          <Gamepad2 size={22} />
                         )}
-                        {item.identification.duplicate &&
-                          " · Già nella libreria: nessun duplicato creato"}
-                      </p>
-                      <strong className="install-state">
-                        {statusLabel[item.status] || item.status}
-                      </strong>
+                      </span>
+                      <span className="install-card-title">
+                        <h3>{item.title}</h3>
+                        <span>
+                          {item.platform_label || "Console da identificare"}
+                        </span>
+                      </span>
+                      <span className="install-card-status">
+                        <strong>{item.experience.label}</strong>
+                        {item.experience.state === "working" && (
+                          <small>{item.experience.phase}</small>
+                        )}
+                        {item.experience.state === "console_update" && (
+                          <small>
+                            File verificati · aggiornamento titoli in attesa
+                          </small>
+                        )}
+                      </span>
+                      <ChevronDown className="install-chevron" size={18} />
+                      {item.experience.state === "working" && (
+                        <Progress
+                          progress={item.experience.progress}
+                          label={`Avanzamento ${item.title}`}
+                        />
+                      )}
+                    </summary>
+                    <div className="install-item-content">
+                      <div className="install-guidance">
+                        <strong>{item.experience.message}</strong>
+                        <p>{item.experience.next_step}</p>
+                      </div>
+                      <div className="actions">
+                        {view === "add" &&
+                          item.experience.actions.includes("replace") && (
+                            <button
+                              onClick={() => {
+                                chooseBatch("");
+                                setPicked([]);
+                                fileInput.current?.click();
+                              }}
+                            >
+                              Seleziona una copia corretta
+                            </button>
+                          )}
+                        {item.experience.actions.includes("library") &&
+                          item.game_id && (
+                            <button
+                              onClick={() => onOpenLibrary?.(item.game_id!)}
+                            >
+                              Apri nella libreria
+                            </button>
+                          )}
+                        {item.experience.actions.includes("pause") && (
+                          <button onClick={() => control("pause")}>
+                            Pausa
+                          </button>
+                        )}
+                        {item.experience.actions.includes("cancel") && (
+                          <button onClick={() => control("cancel")}>
+                            Annulla
+                          </button>
+                        )}
+                        {item.experience.actions.includes("resume") && (
+                          <button onClick={() => control("resume")}>
+                            Riprendi
+                          </button>
+                        )}
+                        {item.experience.actions.includes("retry") && (
+                          <button
+                            disabled={!!busy}
+                            onClick={() =>
+                              perform("Nuovo piano verificato", () =>
+                                api(
+                                  `/installations/items/${item.id}/retry`,
+                                  "POST",
+                                ),
+                              )
+                            }
+                          >
+                            {item.experience.code === "metadata_changed"
+                              ? "Aggiorna piano"
+                              : item.experience.code === "metadata_review"
+                                ? "Aggiorna metadati"
+                                : "Riprova"}
+                          </button>
+                        )}
+                      </div>
+                      {item.experience.actions.includes("metadata_review") && (
+                        <button
+                          onClick={() =>
+                            perform("Segnalazione metadati", () =>
+                              api(
+                                `/installations/items/${item.id}/visible`,
+                                "POST",
+                                { confirmed: true, metadata_review: true },
+                              ),
+                            )
+                          }
+                        >
+                          Lo vedo, ma titolo o immagine sono da correggere
+                        </button>
+                      )}
+                      {item.experience.actions.includes("resolve") && (
+                        <h4>Risolvi problema</h4>
+                      )}
                       <p className="path">{item.source_key}</p>
                       {item.identification.basis && (
                         <p className="muted">{item.identification.basis}</p>
@@ -921,25 +1197,30 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                         </span>
                       </div>
                       {item.progress.sync?.file && (
-                        <div>
-                          <p>{item.progress.sync.file}</p>
-                          {item.status === "verifying" ? (
-                            <p>
-                              Confronto SHA-256 del contenuto remoto in corso…
-                            </p>
-                          ) : (
-                            <>
-                              <progress
-                                value={item.progress.sync.file_bytes || 0}
-                                max={item.progress.sync.file_total || 1}
-                              />
-                              <small>
-                                {bytes(item.progress.sync.bytes || 0)} /{" "}
-                                {bytes(item.progress.sync.total || 0)}
-                              </small>
-                            </>
-                          )}
-                        </div>
+                        <details>
+                          <summary>
+                            Ultimo trasferimento · dati diagnostici
+                          </summary>
+                          <div>
+                            <p>{item.progress.sync.file}</p>
+                            {item.status === "verifying" ? (
+                              <p>
+                                Confronto SHA-256 del contenuto remoto in corso…
+                              </p>
+                            ) : (
+                              <>
+                                <progress
+                                  value={item.progress.sync.file_bytes || 0}
+                                  max={item.progress.sync.file_total || 1}
+                                />
+                                <small>
+                                  {bytes(item.progress.sync.bytes || 0)} /{" "}
+                                  {bytes(item.progress.sync.total || 0)}
+                                </small>
+                              </>
+                            )}
+                          </div>
+                        </details>
                       )}
                       {item.progress.destination && (
                         <p className="muted">
@@ -1021,22 +1302,21 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                       {item.identification.kind === "archive_container" && (
                         <p>{item.identification.reason}</p>
                       )}
-                      {["awaiting_decision", "failed"].includes(item.status) &&
-                        !item.game_id && (
-                          <button
-                            disabled={!!busy}
-                            onClick={() =>
-                              perform("Rianalisi", () =>
-                                api(
-                                  `/installations/items/${item.id}/reanalyze`,
-                                  "POST",
-                                ),
-                              )
-                            }
-                          >
-                            Rianalizza
-                          </button>
-                        )}
+                      {item.experience.actions.includes("reanalyze") && (
+                        <button
+                          disabled={!!busy}
+                          onClick={() =>
+                            perform("Rianalisi", () =>
+                              api(
+                                `/installations/items/${item.id}/reanalyze`,
+                                "POST",
+                              ),
+                            )
+                          }
+                        >
+                          Rianalizza
+                        </button>
+                      )}
                       {item.status === "awaiting_decision" && (
                         <div className="install-review">
                           <p>{item.identification.reason}</p>
@@ -1060,18 +1340,20 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                               Installa {variant.title}
                             </button>
                           ))}
-                          <DecisionControls
-                            item={item}
-                            choose={(body) => {
-                              void perform("Verifica identificazione", () =>
-                                api(
-                                  `/installations/items/${item.id}/decision`,
-                                  "POST",
-                                  body,
-                                ),
-                              );
-                            }}
-                          />
+                          {item.experience.code === "identity" && (
+                            <DecisionControls
+                              item={item}
+                              choose={(body) => {
+                                void perform("Verifica identificazione", () =>
+                                  api(
+                                    `/installations/items/${item.id}/decision`,
+                                    "POST",
+                                    body,
+                                  ),
+                                );
+                              }}
+                            />
+                          )}
                           {item.identification.candidates?.map((c) => (
                             <details key={c.uid}>
                               <summary>
@@ -1086,6 +1368,11 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                                 ))}
                               </ul>
                               <button
+                                disabled={
+                                  !item.experience.actions.includes(
+                                    "resolve",
+                                  ) || c.report.status !== "complete"
+                                }
                                 onClick={() =>
                                   perform("Verifica variante", () =>
                                     api(
@@ -1125,19 +1412,6 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                             {item.error.phase}: {item.error.cause}
                           </strong>
                           <p>{item.error.remedy}</p>
-                          <button
-                            disabled={!!busy}
-                            onClick={() =>
-                              perform("Nuovo tentativo", () =>
-                                api(
-                                  `/installations/items/${item.id}/retry`,
-                                  "POST",
-                                ),
-                              )
-                            }
-                          >
-                            Riprova
-                          </button>
                         </div>
                       )}
                       {item.warnings.length > 0 && (
@@ -1148,27 +1422,81 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                           ))}
                         </details>
                       )}
-                      {item.status === "installed" &&
-                        item.visibility !== "operator_confirmed" && (
-                          <button
-                            onClick={() =>
-                              perform("Conferma visibilità", () =>
-                                api(
-                                  `/installations/items/${item.id}/visible`,
-                                  "POST",
-                                  { confirmed: true },
-                                ),
-                              )
-                            }
-                          >
-                            <Check size={16} />
-                            Lo vedo nel menu sulla console
-                          </button>
-                        )}
+                      {item.experience.actions.includes("visible") && (
+                        <button
+                          onClick={() =>
+                            perform("Conferma visibilità", () =>
+                              api(
+                                `/installations/items/${item.id}/visible`,
+                                "POST",
+                                { confirmed: true },
+                              ),
+                            )
+                          }
+                        >
+                          <Check size={16} />
+                          Lo vedo nel menu sulla console
+                        </button>
+                      )}
+                      <details>
+                        <summary>Diagnostica completa</summary>
+                        <pre className="install-json">
+                          {JSON.stringify(item, null, 2)}
+                        </pre>
+                      </details>
                     </div>
-                  </article>
-                ))}
-              {batch.total > 40 && (
+                  </details>
+                </article>
+              ))}
+              {!batch.card_total && <p>Nessun gioco in questa sezione.</p>}
+              <details className="install-accessories">
+                <summary>
+                  Archivi, file accessori e cronologia tecnica ({batch.total}{" "}
+                  elementi)
+                </summary>
+                <pre className="install-json">
+                  {JSON.stringify(technicalItems || batch.items, null, 2)}
+                </pre>
+                {batch.total > 40 && (
+                  <div className="actions">
+                    <button
+                      disabled={technicalPage === 1 || !!busy}
+                      onClick={() =>
+                        perform("Cronologia tecnica", async () => {
+                          const next = technicalPage - 1;
+                          const result = await api<Batch>(
+                            `/installations/${batch.id}?page=${next}&page_size=40`,
+                          );
+                          setTechnicalItems(result.items);
+                          setTechnicalPage(next);
+                        })
+                      }
+                    >
+                      File precedenti
+                    </button>
+                    <span>
+                      File · pagina {technicalPage} di{" "}
+                      {Math.ceil(batch.total / 40)}
+                    </span>
+                    <button
+                      disabled={technicalPage * 40 >= batch.total || !!busy}
+                      onClick={() =>
+                        perform("Cronologia tecnica", async () => {
+                          const next = technicalPage + 1;
+                          const result = await api<Batch>(
+                            `/installations/${batch.id}?page=${next}&page_size=40`,
+                          );
+                          setTechnicalItems(result.items);
+                          setTechnicalPage(next);
+                        })
+                      }
+                    >
+                      Altri file
+                    </button>
+                  </div>
+                )}
+              </details>
+              {batch.card_total > 40 && (
                 <div className="actions">
                   <button
                     disabled={page === 1}
@@ -1177,10 +1505,10 @@ export default function Installations({ view }: { view: "add" | "queue" }) {
                     Precedenti
                   </button>
                   <span>
-                    Pagina {page} di {Math.ceil(batch.total / 40)}
+                    Pagina {page} di {Math.ceil(batch.card_total / 40)}
                   </span>
                   <button
-                    disabled={page * 40 >= batch.total}
+                    disabled={page * 40 >= batch.card_total}
                     onClick={() => setPage((p) => p + 1)}
                   >
                     Successivi

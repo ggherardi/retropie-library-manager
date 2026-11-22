@@ -14,6 +14,14 @@ Richiede Git, Python 3.10+ e Node.js 22.12+ LTS nel PATH.
 
 La console avviata da Start.cmd resta aperta. `Ctrl+C` arresta il server e attende la conclusione dell'operazione corrente. L'app ascolta esclusivamente sull'interfaccia loopback. Gli endpoint sono documentati in [OpenAPI locale](http://127.0.0.1:8000/docs). Per le chiamate di modifica inviare `X-RLM-Request: 1`.
 
+## Incremento 7.3 — Installazioni chiare e compatte
+
+**Aggiungi giochi** mostra schede espandibili, sezioni **In corso**, **Serve intervento**, **Completati**, **Tutti** e una barra persistente con dati reali. Il backend distingue file verificati, aggiornamenti sulla console, problemi risolvibili ed errori strutturali. Copie uniche e operazioni ripetute sono conteggiate separatamente; le percentuali non vengono inventate per fasi non misurabili. La cronologia e tutti i dettagli tecnici restano consultabili.
+
+Un gioco installato non richiede una prova d’avvio per essere completato. Per titoli o immagini errati, espandere la scheda, aprire la libreria e usare l’aggiornamento metadati verificato. EmulationStation si chiude e riapre solo dalla console locale.
+
+[Guida agli stati e alle azioni](docs/INSTALLATION-EXPERIENCE.md) · [Collaudo 7.3](docs/VALIDATION-INCREMENT7-3.md).
+
 ## Incremento 7.2 — ZIP, RAR e 7z
 
 **Aggiungi giochi** prepara e installa automaticamente ZIP, RAR4/RAR5 e 7z, anche annidati o suddivisi nei volumi supportati. Selezionare tutti i volumi insieme: non occorre estrarli o rinominarli. `Setup.cmd` gestisce il motore 7-Zip richiesto per RAR. I set arcade RAR/7z vengono preparati in ZIP soltanto dopo la verifica DAT; i giochi già catalogati mantengono i percorsi esistenti.

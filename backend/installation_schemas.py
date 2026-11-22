@@ -49,3 +49,4 @@ class InstallationControl(Input):
 
 class VisibilityInput(Input):
     confirmed: Literal[True]
+    metadata_review: bool = False

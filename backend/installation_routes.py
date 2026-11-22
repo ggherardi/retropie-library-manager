@@ -12,7 +12,8 @@ from fastapi import APIRouter, Query, Request
 from sqlalchemy import select
 
 from backend.acquisition import record
-from backend.db import Device, InstallationBatch, InstallationItem, InstallationUpload, Setting
+from backend.db import Device, InstallationBatch, InstallationItem, InstallationUpload, Setting, SyncRun
+from backend.installation_experience import metrics, view
 from backend.installation_schemas import (
     InstallationConfirm,
     InstallationControl,
@@ -52,16 +53,26 @@ def routes(service):
     def dashboard():
         with service.sessions() as db:
             batches = list(
-                db.scalars(select(InstallationBatch).order_by(InstallationBatch.created_at.desc()).limit(50))
+                db.scalars(select(InstallationBatch).order_by(InstallationBatch.created_at.desc()))
             )
             devices = [record(d) for d in db.scalars(select(Device))]
             summaries = []
+            all_items = []
+            runs = {
+                row.id: {"id": row.id, "status": row.status, "report": row.report}
+                for row in db.execute(select(SyncRun.id, SyncRun.status, SyncRun.report))
+            }
+            by_batch: dict[str, list] = {}
+            for row in db.scalars(select(InstallationItem)):
+                by_batch.setdefault(row.batch_id, []).append(record(row))
             for batch in batches:
                 from collections import Counter
 
-                counts = Counter(
-                    db.scalars(select(InstallationItem.status).where(InstallationItem.batch_id == batch.id))
-                )
+                batch_items = by_batch.get(batch.id, [])
+                counts = Counter(i["status"] for i in batch_items)
+                for item in batch_items:
+                    item["experience"] = view(item, record(batch), runs.get(item.get("sync_run_id")))
+                all_items.extend(batch_items)
                 summaries.append(
                     {
                         "id": batch.id,
@@ -72,9 +83,14 @@ def routes(service):
                         "authorized": batch.authorized,
                         "counts": dict(counts),
                         "total": sum(counts.values()),
+                        "experience_summary": metrics(batch_items, [record(batch)]),
                     }
                 )
-        return {"batches": summaries, "devices": devices}
+        return {
+            "batches": summaries,
+            "devices": devices,
+            "experience_summary": metrics(all_items, [record(b) for b in batches]),
+        }
 
     @router.get("/sources")
     def sources(path: str = ""):
@@ -248,8 +264,14 @@ def routes(service):
         return {"id": batch_id}
 
     @router.get("/{batch_id}")
-    def detail(batch_id: str, page: int = Query(1, ge=1), page_size: int = Query(100, ge=1, le=100)):
-        return service.detail(batch_id, page, page_size)
+    def detail(
+        batch_id: str,
+        page: int = Query(1, ge=1),
+        page_size: int = Query(100, ge=1, le=100),
+        section: str = "all",
+        sort: str = "recent",
+    ):
+        return service.detail(batch_id, page, page_size, section, sort)
 
     @router.post("/{batch_id}/confirm")
     def confirm(batch_id: str, body: InstallationConfirm):
@@ -279,6 +301,8 @@ def routes(service):
             if not item or item.status != "installed":
                 raise ValueError("Prima completare la verifica dei file e dei metadati")
             item.visibility = "operator_confirmed"
+            if body.metadata_review:
+                item.progress = {**item.progress, "metadata_review": True}
         return {"ok": True}
 
     return router

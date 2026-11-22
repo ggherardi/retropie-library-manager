@@ -56,18 +56,32 @@ test("browser selection to verified installation, independent ambiguity and repe
   await page
     .getByRole("button", { name: "Installa automaticamente", exact: true })
     .click();
+  await expect(page.getByText("Installato", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  await page
+    .locator(".install-card")
+    .filter({ has: page.getByRole("heading", { name: title, exact: true }) })
+    .locator(":scope > summary")
+    .click();
   await expect(
-    page.getByText("File installati e verificati", { exact: true }),
-  ).toBeVisible({ timeout: 30000 });
-  await expect(
-    page.getByText("Avvio: non verificato", { exact: true }).first(),
+    page
+      .locator(".install-card[open]")
+      .getByText("Avvio: non verificato", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Da verificare", { exact: true }).last(),
+    page.getByText("Serve il tuo intervento", { exact: true }).last(),
   ).toBeVisible();
   expect((await (await request.get("/api/stats")).json()).games).toBe(
     beforeCount + 1,
   );
+  await page
+    .locator(".install-card")
+    .filter({
+      has: page.getByRole("heading", { name: "Unknown", exact: true }),
+    })
+    .locator(":scope > summary")
+    .click();
   await page.getByRole("button", { name: "Salta questo elemento" }).click();
   await page
     .getByRole("button", { name: "Nuova selezione", exact: true })
@@ -81,9 +95,7 @@ test("browser selection to verified installation, independent ambiguity and repe
     .getByRole("button", { name: "Analizza selezione", exact: true })
     .click();
   await expect(
-    page.getByText("Già nella libreria: nessun duplicato creato", {
-      exact: false,
-    }),
+    page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("Confermo di poter utilizzare questi file.", { exact: false })
@@ -91,9 +103,9 @@ test("browser selection to verified installation, independent ambiguity and repe
   await page
     .getByRole("button", { name: "Installa automaticamente", exact: true })
     .click();
-  await expect(
-    page.getByText("File installati e verificati", { exact: true }),
-  ).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText("Già installato", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
   const batches = await (await request.get("/api/installations")).json();
   const current = await (
     await request.get(`/api/installations/${batches.batches[0].id}`)

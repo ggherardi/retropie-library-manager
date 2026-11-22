@@ -708,6 +708,12 @@ export default function App() {
           {(page === "Aggiungi giochi" || page === "Installazioni") && (
             <Installations
               view={page === "Aggiungi giochi" ? "add" : "queue"}
+              onOpenLibrary={(id) => {
+                void action("Apertura libreria", async () => {
+                  setDetail(await api<Game>(`/games/${id}`));
+                  setPage("Catalogo");
+                });
+              }}
             />
           )}
           {[

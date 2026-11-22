@@ -221,7 +221,7 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
         dependencies = list(record["details"].get("dependencies", []))
         # Some DATs repeat BIOS chips in the game record, including in clones
         # whose BIOS dependency is declared on the parent.
-        bios_members = {}
+        bios_members: dict[str, list] = {}
         if role != "bios":
             for target in declared_bios(record):
                 for part in target["components"]:

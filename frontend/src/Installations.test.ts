@@ -1,3 +1,6 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
+import { Progress } from "./Installations";
 import { describe, expect, it } from "vitest";
 import { selectedFiles, statusLabel } from "./Installations";
 
@@ -33,5 +36,38 @@ describe("installation browser selection", () => {
     expect(Object.values(statusLabel).join(" ")).not.toMatch(
       /giocabile|avviato con successo/i,
     );
+  });
+});
+
+describe("honest accessible progress", () => {
+  it("does not assign a percentage to an unknown phase", () => {
+    const html = renderToStaticMarkup(
+      createElement(Progress, {
+        progress: { kind: "indeterminate" },
+        label: "Verifica dei file",
+      }),
+    );
+    expect(html).toContain('aria-label="Verifica dei file"');
+    expect(html).not.toContain("value=");
+  });
+  it("uses measured bytes and a label when supplied", () => {
+    const html = renderToStaticMarkup(
+      createElement(Progress, {
+        progress: { kind: "bytes", value: 30, total: 100 },
+        label: "Copia",
+      }),
+    );
+    expect(html).toContain('value="30"');
+    expect(html).toContain('max="100"');
+  });
+  it("does not draw a transfer bar for a completed state", () => {
+    expect(
+      renderToStaticMarkup(
+        createElement(Progress, {
+          progress: { kind: "none" },
+          label: "Completato",
+        }),
+      ),
+    ).toBe("");
   });
 });

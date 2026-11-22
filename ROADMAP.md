@@ -50,3 +50,7 @@ ZIP/7z console e PS1, annidamento limitato, decoder isolato, staging atomico, ri
 ## Incremento 7.2 — ZIP, RAR e 7z (implementato)
 
 Motore 7-Zip installato e verificato per RAR4/RAR5; volumi RAR, ZIP e 7z, inventario sicuro, decodifica senza destinazioni controllate dall'archivio. Preparazione ZIP dei set arcade soltanto dopo validazione DAT, deduplica fra compressioni e mantenimento dei percorsi esistenti. Test con decoder reali, fixture testuali compresse/solid/multivolume e diagnosi conservativa ECM/APE. Dettagli in docs/VALIDATION-INCREMENT7-2.md.
+
+## Incremento 7.3 — Esperienza installazioni (implementato)
+
+Proiezione backend condivisa degli stati, completamenti basati sui rapporti verificati, distinzione metadati/visibilità/avvio, errori strutturali e interventi, schede compatte, filtri prima della paginazione, avanzamento misurabile o indeterminato, riepiloghi senza duplicati certi, cronologia completa e polling coordinato. Rigenerazione una sola volta del piano in caso di gamelist cambiato, senza aggirare conferme e verifiche. Collaudo con job reali e test documentati in docs/VALIDATION-INCREMENT7-3.md.

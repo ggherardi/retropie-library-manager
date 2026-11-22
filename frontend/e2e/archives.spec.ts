@@ -138,11 +138,9 @@ for (const format of ["zip", "rar"]) {
       .getByRole("button", { name: "Analizza selezione", exact: true })
       .click();
     await expect(
-      page.getByText("Archivio preparato", { exact: true }),
-    ).toBeVisible();
-    await expect(
       page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
+    await page.locator(".install-card > summary").first().click();
     await page
       .getByText("Mostra dettagli archivio", { exact: false })
       .first()
@@ -160,9 +158,9 @@ for (const format of ["zip", "rar"]) {
     await page
       .getByRole("button", { name: "Installa automaticamente", exact: true })
       .click();
-    await expect(
-      page.getByText("File installati e verificati", { exact: true }),
-    ).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("Installato", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
     const batches = await (await request.get("/api/installations")).json();
     const current = await (
       await request.get(`/api/installations/${batches.batches[0].id}`)
