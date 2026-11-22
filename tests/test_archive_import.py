@@ -271,7 +271,7 @@ def test_arcade_and_neogeo_archives_remain_compressed(setup):
             "title": "Verified Neo Game",
             "platform": "neogeo",
             "romof": "neogeo",
-            "components": [component("program.bin", program)],
+            "components": [component("program.bin", program), component("bios.bin", firmware)],
         },
     ]
     import_rows(client, source, rows)
@@ -283,6 +283,9 @@ def test_arcade_and_neogeo_archives_remain_compressed(setup):
     assert item["candidate"]["local_path"] == str(path)
     assert item["candidate"]["format"] == "zip"
     assert not item["identification"]["archive"]["extracted"]
+    report = item["identification"]["chosen"]["report"]
+    assert report["bios"] == ["neogeo"]
+    assert report["archives"]["neogeo"]["path"] == str(source / "neogeo.zip")
     assert not list(app.state.installations.archives.store.root.glob("v*"))
 
 

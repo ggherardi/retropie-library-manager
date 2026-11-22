@@ -192,6 +192,25 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
 
     main_name = entry["parent"] if mode == "merged" and entry["parent"] else entry["name"]
 
+    def declared_bios(record):
+        pending = [record]
+        seen = set()
+        while pending:
+            current = pending.pop()
+            if current["name"] in seen:
+                continue
+            seen.add(current["name"])
+            for name in dict.fromkeys(
+                [current["romof"], current["parent"], *current["details"].get("dependencies", [])]
+            ):
+                target = catalog.get(name)
+                if target is None:
+                    continue
+                if target["kind"] == "bios":
+                    yield target
+                else:
+                    pending.append(target)
+
     def visit(record, role="game"):
         name = record["name"]
         if name in visiting:
@@ -199,6 +218,15 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
         if name in visited:
             return
         visiting.add(name)
+        dependencies = list(record["details"].get("dependencies", []))
+        # Some DATs repeat BIOS chips in the game record, including in clones
+        # whose BIOS dependency is declared on the parent.
+        bios_members = {}
+        if role != "bios":
+            for target in declared_bios(record):
+                for part in target["components"]:
+                    if part["kind"] == "rom" and part["status"] != "nodump" and not part["optional"]:
+                        bios_members.setdefault(part["name"], []).append((target["name"], part))
         for part in record["components"]:
             if part["optional"]:
                 continue
@@ -215,6 +243,17 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
                         "reason": "Componente non verificabile (CHD/nodump/hash o dimensione assente)",
                     }
                 )
+                continue
+            shared_bios = next(
+                (
+                    owner
+                    for owner, expected in bios_members.get(part["name"], [])
+                    if matches(part, expected) and matches(expected, part)
+                ),
+                None,
+            )
+            if shared_bios:
+                dependencies.append(shared_bios)
                 continue
             candidates = []
             if role == "bios":
@@ -253,7 +292,6 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
                         "reason": "Componente mancante o nome/dimensione/hash differente",
                     }
                 )
-        dependencies = list(record["details"].get("dependencies", []))
         if record["romof"] and record["romof"] != record["parent"]:
             dependencies.append(record["romof"])
         if record["parent"] and mode in {"split", "merged"}:

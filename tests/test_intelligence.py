@@ -158,6 +158,40 @@ def test_parent_clone_bios_set_modes(tmp_path, mode):
         assert validate_set(catalog["clone"], catalog, paths, mode)["status"] == "incomplete"
 
 
+def test_flattened_clone_bios_is_validated_in_shared_archive(tmp_path):
+    program = b"clone program"
+    firmware = b"shared firmware"
+    bios_member = component("bios.bin", firmware)
+    catalog = {
+        "neogeo": entry("neogeo", [bios_member], kind="bios"),
+        "parent": entry("parent", [], romof="neogeo"),
+        "clone": entry(
+            "clone", [component("program.bin", program), bios_member], parent="parent", romof="parent"
+        ),
+    }
+    paths = {
+        "clone": archive(tmp_path, "clone", {"program.bin": program}),
+        "neogeo": archive(tmp_path, "neogeo", {"bios.bin": firmware}),
+    }
+    def validate(mode):
+        return validate_set(catalog["clone"], catalog, paths, mode)
+
+    report = validate("non-merged")
+    assert report["launchable"], report["problems"]
+    assert report["bios"] == ["neogeo"]
+    assert {check["file"]: check["matched"]["archive"] for check in report["checks"]} == {
+        "program.bin": "clone",
+        "bios.bin": "neogeo",
+    }
+    assert not validate("full-non-merged")["launchable"]
+    paths["neogeo"] = archive(tmp_path, "neogeo", {"bios.bin": b"x" * len(firmware)})
+    assert not validate("non-merged")["launchable"]
+    paths.pop("neogeo")
+    assert not validate("non-merged")["launchable"]
+    paths["clone"] = archive(tmp_path, "clone", {"program.bin": program, "bios.bin": firmware})
+    assert validate("full-non-merged")["launchable"]
+
+
 def test_component_names_size_hash_and_unknown_dumps(tmp_path):
     game = entry("demo", [component("program.bin", b"correct")])
     for files in [{"other.bin": b"correct"}, {"program.bin": b"corrupt"}, {"program.bin": b"correct-long"}]:
