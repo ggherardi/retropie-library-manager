@@ -56,7 +56,7 @@ Questa è una prova su un altro dispositivo fisico nella LAN, non un browser loc
 
 Anche la pagina login sul vero URL http://192.168.0.31:8000 è stata caricata in WebKit locale a 390×844: modulo visibile, pagina larga 390 pixel e SubtleCrypto realmente assente sul contesto HTTP LAN, senza override artificiali. Questa verifica non inserisce la password personale e non viene presentata come uso di un iPhone fisico. Screenshot in .runtime/lan, escluso da Git.
 
-Il login e gli upload autenticati sono collaudati nei browser Chromium/WebKit con dati isolati descritti sopra. È stato richiesto all'utente il controllo con Safari su un iPhone fisico: **conferma ancora in attesa**. L'attendibilità di un certificato HTTPS sul telefono e un tunnel privato non sono collaudati.
+Il login e gli upload autenticati sono collaudati nei browser Chromium/WebKit con dati isolati descritti sopra. **Collaudo sul telefono reale confermato dall'utente:** il modulo password compare, il login riesce e la libreria/sezioni sono navigabili. L'errore iniziale ERR_SSL_PROTOCOL_ERROR è stato risolto aprendo una nuova scheda e incollando l'URL completo `http://192.168.0.31:8000/`. Il confronto diagnostico ha mostrato HTTP 200 senza redirect e un handshake TLS non valido usando invece https sulla stessa porta. Non sono state modificate impostazioni del browser, firewall o server per risolverlo. L'attendibilità di un certificato HTTPS sul telefono e un tunnel privato non sono collaudati.
 
 HTTP rimane non cifrato: password, cookie e file possono essere intercettati sulla connessione. La [guida LAN](LAN.md) documenta HTTPS locale e tunnel senza cloud obbligatorio. Il firewall ristretto e il login non sostituiscono la cifratura.
 

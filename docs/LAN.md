@@ -50,3 +50,10 @@ Una volta ricevuti e confermati i file, importazione e installazione proseguono 
 Per cambiare una password dimenticata, attendere la fine dei job, arrestare il server ed eseguire `Start.cmd --reset-password` sul PC ospite. Il prompt non mostra la password, chiede conferma e revoca tutte le sessioni. Riavviare `Start.cmd`. Non cancellare i dati della libreria.
 
 Se il sito non risponde, verificare PC acceso, server avviato, URL e porta correnti, profilo Privato, regola firewall e assenza di isolamento Wi-Fi. Se scade la sessione, accedere nuovamente. Nessuna funzione di gestione viene resa anonima per risolvere un errore di login.
+
+
+## ERR_SSL_PROTOCOL_ERROR prima del login
+
+Con l'avvio HTTP ordinario, aprire l'URL completo con `http://`, per esempio `http://192.168.0.31:8000/`. Se il browser tenta `https://` sulla stessa porta HTTP, l'handshake TLS fallisce prima che l'app possa mostrare il login. Il server HTTP non può correggere un errore avvenuto durante il tentativo TLS tramite un redirect applicativo. Controllare lo schema nella barra, aprire una nuova scheda e incollare l'indirizzo completo; non ignorare errori di certificato e non disattivare globalmente le protezioni del browser.
+
+Alcuni browser possono tentare HTTPS per primi: vedere la [documentazione WebKit](https://webkit.org/blog/16301/webkit-features-in-safari-18-2/#security-and-privacy) e la [guida Chrome alle connessioni sicure](https://support.google.com/chrome/answer/10468685). Questo non dimostra quale impostazione fosse attiva sul singolo telefono. Nel collaudo reale del 23 novembre 2026 l'URL HTTP esplicito ha risolto l'errore; l'utente ha poi confermato login e navigazione. Per usare effettivamente HTTPS occorrono certificato attendibile e avvio TLS, come descritto sopra; HTTP continua a non cifrare il traffico.
