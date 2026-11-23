@@ -1,4 +1,4 @@
-# Collaudo accesso LAN — 22 novembre 2026
+# Collaudo accesso LAN — 22–23 novembre 2026
 
 Versione applicazione 0.8.0, evoluzione di main 18151371b7ca5de736662f4462a34604bd1b7069. Questa verifica non installa giochi o BIOS e non modifica ROM, salvataggi o configurazioni del Raspberry.
 
@@ -23,7 +23,7 @@ Le prove browser includono **Chromium e WebKit**, viewport 390×844 e SubtleCryp
 
 Le prove preesistenti verificano gli altri flussi, incluse ripresa/ritentativi, sincronizzazione incrementale e preservazione dei dati. Le simulazioni usano dati isolati, non la libreria personale o un dispositivo reale.
 
-## Collaudo effettivo su Windows
+## Collaudo iniziale su Windows (22 novembre, prima dell’attivazione)
 
 - Avvio normale aggiornato: salute 200, versione 0.8.0, solo `127.0.0.1:8000` in ascolto.
 - `Start.cmd --port 18004`: avvio realmente eseguito su dati isolati, salute 200; inoltro degli argomenti verificato. Istanza di prova arrestata.
@@ -32,12 +32,34 @@ Le prove preesistenti verificano gli altri flussi, incluse ripresa/ritentativi, 
 - Ethernet 2: IP effettivo `192.168.0.31/24`, subnet `192.168.0.0/24`, profilo Windows **Public**. Firewall attivo; nessuna regola dedicata dell'app rilevata.
 - Script firewall analizzato da PowerShell e simulato con `-WhatIf`: proposta soltanto la conversione di Ethernet 2 in Privata e la regola `RetroPieLibraryManager-LAN-8000`, limitata a TCP 8000, profilo Private, subnet 192.168.0.0/24, IP locale 192.168.0.31, stessa interfaccia e `C:\Python310\python.exe`. Nessuna modifica applicata in attesa del consenso richiesto dall'utente.
 
-## Verifiche reali ancora da completare
+## Attivazione e collaudo LAN reale — 23 novembre
 
-**L'accesso LAN operativo non è ancora attivato.** La password amministratore deve essere scelta e inserita dall'utente nel modulo locale. È stata richiesta separatamente l'autorizzazione a cambiare il profilo dell'interfaccia e creare la regola firewall; la richiesta non equivale al consenso. L'app rimane intenzionalmente su localhost, senza configurare una password al posto dell'utente o aprire un accesso anonimo.
+L'utente ha configurato la password personalmente nel modulo locale e ha autorizzato esplicitamente entrambe le modifiche amministrative. Sono stati ricontrollati IP/subnet e assenza di job attivi prima di intervenire. La password non è stata letta né sostituita, le sessioni sono rimaste persistenti e soltanto il server Windows è stato riavviato.
 
-Dopo questi passaggi occorre attivare la preferenza, riavviare soltanto il server Windows e verificare una connessione da un altro dispositivo LAN. Il Raspberry è disponibile via SSH per controlli in sola lettura; la raggiungibilità del sito dal Raspberry non è stata ancora dichiarata verificata. Nessun accesso su iPhone fisico è stato eseguito: **WebKit con viewport iPhone è una simulazione locale, non Safari su un telefono reale**. L'attendibilità di un eventuale certificato sul telefono e un tunnel privato non sono collaudati.
+**Accesso LAN attivo:** http://192.168.0.31:8000. Anche http://127.0.0.1:8000 resta funzionante. Preferenza persistente LAN=true e porta 8000; binding effettivo 0.0.0.0, nessun riavvio necessario per le preferenze correnti. La sessione locale già aperta continua a ricevere API 200 dopo il riavvio, senza richiedere né esporre la password nei tool.
 
-HTTP rimane non cifrato. Login e controlli API non proteggono le credenziali o i file dall'intercettazione sulla rete. La [guida LAN](LAN.md) documenta HTTPS e tunnel senza introdurre servizi cloud obbligatori.
+Profilo effettivo di **Ethernet 2: Private**. Verificata la sola nuova regola `RetroPieLibraryManager-LAN-8000`: abilitata, inbound allow TCP 8000, profilo Private, LocalAddress 192.168.0.31, RemoteAddress 192.168.0.0/24, InterfaceAlias Ethernet 2, Program C:\Python310\python.exe. Nessuna modifica al router, nessun port forwarding e nessuna altra regola modificata. Gli IP del QR sono derivati dall'interfaccia reale; nessuna credenziale o token inclusi.
 
-Il [rapporto Neo Geo separato](NEOGEO-BIOS-REVIEW.md) registra le verifiche in sola lettura del core e dei sei candidati, e i due percorsi BIOS ancora necessari. Non è stato trasferito alcun BIOS.
+**Connessione reale dal Raspberry 192.168.0.13 al PC**, eseguita con il suo client HTTP e senza credenziali:
+
+| Risorsa | HTTP osservato |
+|---|---:|
+| `/` | 200 |
+| `/api/health` | 200 |
+| `/api/access/status` | 200, configured=true, authenticated=false, local=false, nonce/CSRF vuoti |
+| `/api/games` | 401 |
+| `/api/settings` | 401 |
+| `/api/access/network` | 401 |
+| `/api/access/qr` | 401 |
+
+Questa è una prova su un altro dispositivo fisico nella LAN, non un browser locale. Dimostra raggiungibilità del servizio e protezione delle API anonime; non viene presentata come un login Safari effettuato sul telefono. Non sono stati copiati cookie o password sul Raspberry. Il suo filesystem ROM/BIOS/salvataggi e le configurazioni sono rimasti invariati; non è stato avviato o riavviato EmulationStation.
+
+Anche la pagina login sul vero URL http://192.168.0.31:8000 è stata caricata in WebKit locale a 390×844: modulo visibile, pagina larga 390 pixel e SubtleCrypto realmente assente sul contesto HTTP LAN, senza override artificiali. Questa verifica non inserisce la password personale e non viene presentata come uso di un iPhone fisico. Screenshot in .runtime/lan, escluso da Git.
+
+Il login e gli upload autenticati sono collaudati nei browser Chromium/WebKit con dati isolati descritti sopra. È stato richiesto all'utente il controllo con Safari su un iPhone fisico: **conferma ancora in attesa**. L'attendibilità di un certificato HTTPS sul telefono e un tunnel privato non sono collaudati.
+
+HTTP rimane non cifrato: password, cookie e file possono essere intercettati sulla connessione. La [guida LAN](LAN.md) documenta HTTPS locale e tunnel senza cloud obbligatorio. Il firewall ristretto e il login non sostituiscono la cifratura.
+
+Questa prosecuzione modifica solo configurazione runtime autorizzata e verbali: nessuna modifica ai sorgenti rispetto al codice già collaudato del commit 42a1cd7 (329 backend, 17 frontend, 14 browser, lint/typecheck/build superati il 22 novembre). Le nuove verifiche del 23 novembre sono l'analisi dei due archivi, dodici preflight dei giochi e il collaudo LAN effettivo; non si dichiarano rieseguite inutilmente suite invariate.
+
+Il [rapporto Neo Geo](NEOGEO-BIOS-REVIEW.md) ora contiene entrambi gli inventari CRC32/SHA-1/dimensioni e i risultati dei sei giochi. Nessun BIOS trasferito.
