@@ -4,7 +4,7 @@
 
 **BIOS condiviso e tutti e sei i giochi installati sul Raspberry**, con SHA-256 locali/remoti uguali, XML valido e secondo dry-run a zero byte. L'utente ha autorizzato esplicitamente l'installazione dopo correzione e verifica del validatore. Nessun archivio originale è stato modificato; dieci file di salvataggio/configurazione controllati hanno mantenuto lo stesso SHA-256 prima e dopo. Nessun riavvio di EmulationStation tramite SSH.
 
-Alla verifica tecnica non è stato avviato nessun gioco. La conferma dell'operatore dalla console locale viene registrata separatamente; non deriva dal successo della copia.
+Dopo la verifica tecnica l'utente ha confermato **Neo Geo visibile e Metal Slug 5 avviato** dalla console locale. La prova è registrata nel Library Manager come dichiarazione dell'operatore, associata al dispositivo e allo SHA-256 verificato; non deriva dal successo della copia. Gli altri cinque giochi restano non provati.
 
 ## Correzione del validatore
 
@@ -35,7 +35,7 @@ Dry-run iniziale: destinazione assente, nessun conflitto, 23.614.615.552 byte li
 
 | Set | Validazione | Trasferimento | SHA-256 remoto uguale all'originale | Avvio |
 |---|---|---|---|---|
-| `mslug5` | 13 componenti gioco corretti; MVS completo | Trasferito | `9d6bac660155bd05600e0bc3d4288440ffe18f2ab0ae148f884523063bc40d9b` | Non provato sulla console |
+| `mslug5` | 13 componenti gioco corretti; MVS completo | Trasferito | `9d6bac660155bd05600e0bc3d4288440ffe18f2ab0ae148f884523063bc40d9b` | Avvio confermato dall’utente |
 | `wjammers` | 11 componenti gioco corretti; MVS completo | Trasferito | `cd43ea666da62ba1c52e646b14aa05a08ce98622a5d472cdd3f338a2020251ec` | Non provato sulla console |
 | `magdrop3` | 9 componenti gioco corretti; MVS completo | Trasferito | `a1ded4b29b2ea4481bc00dbfdc2a33900f81c0d9337917e45ec533143152d912` | Non provato sulla console |
 | `pbobblen` | 13 componenti gioco corretti; MVS completo | Trasferito | `2ace03beb7af6fd35aa8ac1b81163a1f6126e6d47044fb58d8059481c0e1e7d8` | Non provato sulla console |
@@ -59,9 +59,9 @@ Secondo dry-run `ec456371-6487-4a38-9631-2ceae63d2e0b`: **required_bytes=0**, ne
 
 ## Prova sulla console
 
-Richiesto all'utente di riaprire EmulationStation **dalla console locale**, controllare Neo Geo e provare almeno Metal Slug 5. Conferma ancora in attesa: nessun titolo viene dichiarato avviato sulla base del trasferimento.
+L'utente ha confermato **«Neo Geo visibile e Metal Slug 5 si avvia»**. Registrato test_status=passed con basis=operator_report, dispositivo e SHA-256. È una prova di avvio, non di completamento o prestazioni prolungate. Gli altri cinque titoli restano non provati; non viene estesa ad essi la prova di Metal Slug 5.
 
-**Possiamo installare i sei giochi Neo Geo con questi BIOS? Sì: ora risultano installati e verificati nel profilo MVS standard.** L'avvio effettivo resta uno stato separato e richiede la prova locale.
+**Possiamo installare i sei giochi Neo Geo con questi BIOS? Sì: ora risultano installati e verificati nel profilo MVS standard.** Avvio confermato per Metal Slug 5; gli altri cinque titoli restano da provare sulla console.
 
 ## Inventario completo
 
