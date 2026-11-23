@@ -166,3 +166,14 @@ Dopo il bootstrap tutte le API, OpenAPI e i file utente richiedono autenticazion
 Il frontend conserva il CSRF solo in memoria, recupera la sessione al refresh e torna al login dopo un 401. Upload a blocchi e tutte le API passano gli stessi controlli. La SHA-256 dei blocchi usa WebCrypto quando disponibile e il modulo SHA-256 locale di `@noble/hashes` quando il contesto HTTP LAN non espone SubtleCrypto. Gli ID delle richieste usano getRandomValues, disponibile anche senza randomUUID. Non viene disabilitato alcun controllo d'integrità per mobile.
 
 La guida operativa [LAN.md](LAN.md) distingue autenticazione e cifratura, le opzioni TLS/tunnel, i limiti browser e la verifica fisica da quella simulata. Il trasporto SSH verso il Raspberry e la pipeline di installazione non cambiano.
+
+
+## Profilo BIOS Neo Geo MVS verificato
+
+`neogeo_bios.py` definisce un profilo limitato al core FBNeo della revisione af50579270a610eda8ac580648d9c12acc7bb565. Si applica solo a cataloghi ufficiali verificati e a un'entry neogeo identica per tutti i 38 nomi/dimensioni/CRC del manifest fissato nel codice. Revisioni o manifest diversi mantengono la validazione DAT rigorosa. I componenti obbligatori sono sp-s3.sp1, sm1.sm1, sfix.sfix e 000-lo.lo; le alternative assenti sono registrate separatamente. Un'alternativa presente con hash errato continua a bloccare il set. Tutti gli hash dichiarati, incluso SHA-1 quando disponibile, continuano a essere confrontati.
+
+I rapporti distinguono completezza dei requisiti MVS e inventario dell'intero DAT. Prima di pianificare e prima di trasferire, il guard legge le opzioni effettive e gli override del core: AES, selezioni BIOS differenti, comandi personalizzati e percorsi/include di opzioni non verificati vengono rifiutati. La lettura del BIOS remoto controlla tutti i componenti richiesti dal rapporto. Non vengono cambiati emulatori o configurazioni per rendere accettabile un set.
+
+I BIOS non diventano giochi. La ricerca considera soltanto neogeo.zip nelle radici esplicitamente autorizzate, senza scansioni personali. L'operazione separata `shared_bios` è read-only per impostazione iniziale; il trasferimento richiede authorized=True dopo il consenso dell'operatore. Riusa SafeRemote, confronto dei prefissi, SHA-256, rename senza sovrascrittura e margine minimo di 4 GiB. La pipeline giochi continua a richiedere un BIOS remoto valido prima della conferma. I giochi passano dai normali DeviceService.prepare/confirm/execute, con tutti i controlli di core, spazio, conflitti e protezione EmulationStation.
+
+Evidenze e risultato dell'installazione: [rapporto Neo Geo](NEOGEO-BIOS-REVIEW.md).

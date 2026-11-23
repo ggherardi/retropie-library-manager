@@ -158,8 +158,14 @@ def matches(expected, actual):
     )
 
 
-def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, inventory_cache=None):
+def validate_set(
+    entry, catalog, archives, mode, checkpoint=lambda: None, inventory_cache=None, source_config=None
+):
     """archives maps technical set name to path; caches only hashes, not decompressed bytes."""
+    from backend.neogeo_bios import REQUIRED, mvs_profile
+
+    mvs = mvs_profile(catalog, source_config)
+    optional_checks = []
     cache = {}
     shared = inventory_cache if inventory_cache is not None else {}
     used = {}
@@ -275,12 +281,19 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
                 candidates = [(owner, part["merge"]) for owner in dict.fromkeys(owners) if owner]
             else:
                 candidates = [(main_name if role == "game" else name, part["name"])]
+            optional = mvs and role == "bios" and name == "neogeo" and part["name"] not in REQUIRED
+            present = False
             found = None
             for set_name, file_name in candidates:
                 contents = inventory(set_name)
+                if contents is not None and file_name in contents:
+                    present = True
                 if contents is not None and matches(part, contents.get(file_name)):
                     found = {"archive": set_name, "member": file_name}
                     break
+            if optional and not present:
+                optional_checks.append({"file": part["name"], "state": "absent", "expected": part})
+                continue
             checks.append(
                 {"set": name, "file": part["name"], "matched": found, "expected": part, "role": role}
             )
@@ -313,6 +326,8 @@ def validate_set(entry, catalog, archives, mode, checkpoint=lambda: None, invent
         problems.append({"set": entry["name"], "file": "", "reason": "Nessun componente ROM verificabile"})
     status = "complete" if not problems else "incomplete"
     return {
+        "bios_profile": "fbneo-mvs-standard-v1" if mvs and optional_checks else "strict-dat",
+        "optional_bios": optional_checks,
         "status": status,
         "set_name": entry["name"],
         "mode": mode,

@@ -140,6 +140,12 @@ class Identifier:
                                     archives[name] = allowed(game.local_path, roots)
                                 except ValueError:
                                     pass
+                if "neogeo" in catalog and "neogeo" not in archives:
+                    for root in roots:
+                        bios_path = Path(root) / "neogeo.zip"
+                        if bios_path.is_file():
+                            archives["neogeo"] = allowed(str(bios_path), roots)
+                            break
                 reports = []
                 for selected_mode in (
                     [mode] if selected_uid else ["non-merged", "full-non-merged", "split", "merged"]
@@ -152,6 +158,7 @@ class Identifier:
                         selected_mode,
                         checkpoint,
                         shared,
+                        source_config=source.config,
                     )
                     report.update(
                         source_id=source.id,

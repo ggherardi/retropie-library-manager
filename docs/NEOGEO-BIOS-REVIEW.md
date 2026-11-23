@@ -1,71 +1,67 @@
-# Verifica dei due BIOS Neo Geo — 23 novembre 2026
+# BIOS Neo Geo e sei giochi — installazione del 23 novembre 2026
 
-## Esito
+## Risultato attuale
 
-**Il nuovo `neogeo.zip` è il candidato tecnicamente adatto a una configurazione MVS standard del core installato, ma non supera la validazione automatica attuale dell'intero DAT: 34 componenti corretti su 38.** Mancano quattro BIOS alternativi/opzionali. Il vecchio ZIP non è adatto a questo DAT: tre componenti non corrispondono e il quarto è un BIOS MVS con un nome differente. Gli archivi originali non sono stati modificati, rinominati, estratti permanentemente o trasferiti.
+**BIOS condiviso e tutti e sei i giochi installati sul Raspberry**, con SHA-256 locali/remoti uguali, XML valido e secondo dry-run a zero byte. L'utente ha autorizzato esplicitamente l'installazione dopo correzione e verifica del validatore. Nessun archivio originale è stato modificato; dieci file di salvataggio/configurazione controllati hanno mantenuto lo stesso SHA-256 prima e dopo. Nessun riavvio di EmulationStation tramite SSH.
 
-Il controllo verifica contenuti e compatibilità prevista, **non costituisce una prova di avvio** e non dimostra da solo i diritti di utilizzo/trasferimento.
+Alla verifica tecnica non è stato avviato nessun gioco. La conferma dell'operatore dalla console locale viene registrata separatamente; non deriva dal successo della copia.
 
-## Archivi individuati nella cartella indicata dall'utente
+## Correzione del validatore
 
-| Archivio | Dimensione ZIP | Membri | Corrispondenze del contenuto nel DAT | SHA-256 ZIP |
-|---|---:|---:|---|---|
-| `Desktop/bios/neogeo.zip` (indicato come MAME 0.251 new) | 1858095 | 34 | 34 / 38, nomi corretti | `e86ab6faaaa490175d3f7edfd56f258ce26f24e625ba3d99cf0eb0f12e78f2c0` |
-| `Desktop/bios/neogeo old.zip` (indicato come MAME 0.111 old) | 55722 | 4 | 1 / 38 per hash, **0 / 38 per nome e hash** | `87174122434511980eca227fd488b1c133b268d2cee1bb00eed4ff8def90b9f5` |
+Profilo `fbneo-mvs-standard-v1`, limitato a `lr-fbneo v1.0.0.03 af50579`, revisione completa af50579270a610eda8ac580648d9c12acc7bb565. Il catalogo deve essere ufficiale verificato e tutti i 38 nomi/dimensioni/CRC dell'entry neogeo devono coincidere con il manifest fissato nel codice. Un DAT o una revisione diversi conservano la validazione rigorosa precedente.
 
-Entrambi sono ZIP validi, con file direttamente nella radice e **nessun archivio annidato**. I membri sono stati letti in memoria con limiti di numero, profondità e byte; il CRC interno ZIP è stato verificato durante la lettura. Nessuna esecuzione di contenuti. SHA-256 degli originali ricontrollati dopo le simulazioni: invariati. Le etichette MAME sono quelle indicate dall'utente, non una prova di compatibilità FBNeo o di autorizzazione alla distribuzione.
+Il [driver verificato](https://github.com/libretro/FBNeo/blob/af50579270a610eda8ac580648d9c12acc7bb565/src/burn/drv/neogeo/d_neogeo.cpp#L938) richiede per il profilo MVS standard:
 
-Il nuovo ZIP contiene BIOS SNK MVS regionali e Deck, i tre componenti comuni e quindici varianti Universe BIOS, comprese **4.0 e 3.3**. Il vecchio non contiene alcun UniBIOS: `aes-bios.bin` ha in realtà il CRC e la dimensione di `sp-s2.sp1`, BIOS **MVS Asia/Europe ver. 5**, non di un BIOS AES. Non è stato rinominato.
+| Componente | Byte | CRC32 |
+|---|---:|---|
+| sp-s3.sp1 | 131072 | 91b64be3 |
+| sm1.sm1 | 131072 | 94416d67 |
+| sfix.sfix | 131072 | c2ea0cfd |
+| 000-lo.lo | 131072 | 5a86cff2 |
 
-## Core e DAT effettivamente verificati
+Le quattro assenze neo-po.bin, neo-epo.bin, neodebug.bin, neopen.sp1 sono alternative AES/debug/NeoOpen marcate BRF_SELECT/BRF_OPT dal driver. Il nuovo ZIP contiene 34 componenti corretti, inclusi i quattro obbligatori e UniBIOS 4.0/3.3. La completezza dei requisiti MVS non viene presentata come inventario 38/38 del DAT. Le alternative assenti sono esplicite nel rapporto; un'alternativa presente ma con hash errato blocca comunque il set. CRC32, dimensione e ogni altro hash dichiarato, incluso SHA-1, restano obbligatori. Nel DAT reale SHA-1 non è disponibile: gli SHA-1 dell'inventario sotto sono calcolati, non confrontati con valori inventati.
 
-Raspberry Pi 3 B+, RetroPie 4.8, core `lr-fbneo` predefinito per neogeo: **v1.0.0.03 af50579**, SHA-256 `37dc6340f459a5f50d30c5ab9bcf5974926de4245a5ead2d07046868ade57643`. Verifica SSH ripetuta il 23 novembre, in sola lettura, senza inizializzare il core né avviare giochi. Il probe non trova neogeo.zip in BIOS, BIOS/fbneo o ROM/neogeo; nessun BIOS è stato installato.
+Prima della pianificazione e di nuovo prima del trasferimento sono stati letti core, comando effettivo, configurazioni RetroArch e opzioni. Il comando lr-fbneo è quello standard con il config neogeo; nessuna selezione AES o BIOS alternativo è attiva. Comandi personalizzati, include/percorsi non verificati, override BIOS incompatibili vengono rifiutati. Nessun config del Raspberry è stato modificato per rendere valido il set. La dipendenza BIOS del clone kf2k2mp2 viene risolta tramite kof2002.
 
-DAT attivo alla revisione `af50579270a610eda8ac580648d9c12acc7bb565`, SHA-256 `85f9a7988545ea22de01d1d2814df5d8a19b1153ebbbb385df6fe5471c3e016e`, identico a quello collegato al core. L'entry neogeo elenca 38 componenti con CRC32 e dimensione. **Il DAT non fornisce SHA-1:** quelli sotto sono calcolati per identificare i file e non vengono presentati come confrontati con un valore atteso inesistente.
+## BIOS installato
 
-## I dodici componenti precedentemente mancanti
+Origine autorizzata: Desktop/bios/neogeo.zip. Destinazione `/home/pi/RetroPie/BIOS/neogeo.zip`, 1.858.095 byte.
 
-| Componente | Byte attesi | CRC32 atteso | ZIP nuovo | ZIP vecchio |
-|---|---:|---|---|---|
-| `sp-s3.sp1` | 131072 | `91b64be3` | Corretto | Mancante |
-| `sp1-u2` | 131072 | `62f021f4` | Corretto | Mancante |
-| `sp1-u4.bin` | 131072 | `1179a30f` | Corretto | Mancante |
-| `sp1-u3.bin` | 131072 | `2025b7a2` | Corretto | Mancante |
-| `sp-j3.sp1` | 524288 | `486cb450` | Corretto | Mancante |
-| `sp1-j3.bin` | 131072 | `fbc6d469` | Corretto | Mancante |
-| `neo-po.bin` | 131072 | `16d0c132` | **Mancante** | Mancante |
-| `neo-epo.bin` | 131072 | `d27a71f1` | **Mancante** | Mancante |
-| `neodebug.bin` | 131072 | `698ebb7d` | **Mancante** | Mancante |
-| `uni-bios_4_0.rom` | 131072 | `a7aab458` | Corretto | Mancante |
-| `uni-bios_3_3.rom` | 131072 | `24858466` | Corretto | Mancante |
-| `neopen.sp1` | 131072 | `cb915e76` | **Mancante** | Mancante |
+SHA-256 verificato: `e86ab6faaaa490175d3f7edfd56f258ce26f24e625ba3d99cf0eb0f12e78f2c0`.
 
-Il nuovo ZIP risolve **8 dei 12** componenti segnalati; il vecchio nessuno. L'unione dei due nuovi archivi con le copie di gioco già autorizzate conserva gli stessi quattro mancanti: **non permette di preparare un neogeo.zip completo secondo il DAT attuale**. Non è stato creato un BIOS combinato incompleto né aggiunto un componente con hash differente.
+Dry-run iniziale: destinazione assente, nessun conflitto, 23.614.615.552 byte liberi. Pubblicazione tramite staging, verifica SHA-256 e rename senza sovrascritture, usando SafeRemote della pipeline. Consenso esplicito richiesto dal servizio per eseguire la copia; il valore predefinito rimane read-only. Il vecchio neogeo old.zip non è stato usato: un file corrisponde per hash a sp-s2.sp1 con nome differente; gli altri tre non corrispondono al DAT. Nessun nuovo firmware scaricato o pubblicato.
 
-## Necessari all'avvio e alternative
+## Rapporto per gioco
 
-Il [driver alla revisione installata](https://github.com/libretro/FBNeo/blob/af50579270a610eda8ac580648d9c12acc7bb565/src/burn/drv/neogeo/d_neogeo.cpp#L938) distingue il BIOS 68000 selezionato dai componenti comuni. Il nuovo ZIP contiene il default MVS `sp-s3.sp1` (131072 byte, CRC 91b64be3), `sm1.sm1` (131072, 94416d67), `sfix.sfix` (131072, c2ea0cfd) e `000-lo.lo` (131072, 5a86cff2), tutti verificati.
+| Set | Validazione | Trasferimento | SHA-256 remoto uguale all'originale | Avvio |
+|---|---|---|---|---|
+| `mslug5` | 13 componenti gioco corretti; MVS completo | Trasferito | `9d6bac660155bd05600e0bc3d4288440ffe18f2ab0ae148f884523063bc40d9b` | Non provato sulla console |
+| `wjammers` | 11 componenti gioco corretti; MVS completo | Trasferito | `cd43ea666da62ba1c52e646b14aa05a08ce98622a5d472cdd3f338a2020251ec` | Non provato sulla console |
+| `magdrop3` | 9 componenti gioco corretti; MVS completo | Trasferito | `a1ded4b29b2ea4481bc00dbfdc2a33900f81c0d9337917e45ec533143152d912` | Non provato sulla console |
+| `pbobblen` | 13 componenti gioco corretti; MVS completo | Trasferito | `2ace03beb7af6fd35aa8ac1b81163a1f6126e6d47044fb58d8059481c0e1e7d8` | Non provato sulla console |
+| `turfmast` | 9 componenti gioco corretti; MVS completo | Trasferito | `1178ee4b0d7265fa5f9a282fcf4ac9d9ddb6d4feb1159bd96ddb8915ece6d065` | Non provato sulla console |
+| `kf2k2mp2` | 14 componenti gioco corretti; MVS completo | Trasferito | `f5d24763a5278b738c4912dacd152d83091a3583469bd36a28e8318849f5d3f0` | Non provato sulla console |
 
-Le quattro assenze corrispondono a **AES Japan**, **AES Asia**, **development kit** e **NeoOpen beta**. Il driver le marca BRF_SELECT e BRF_OPT. Non sono quattro parti da concatenare al BIOS MVS e la loro mancanza non equivale alla mancanza del BIOS MVS di avvio. UniBIOS 4.0/3.3 sono ulteriori alternative presenti e corrette, non sostituti dei componenti comuni.
+Sei righe libreria importate attraverso il servizio condiviso, deduplica per hash, metadati dal DAT ufficiale, nessuna riga BIOS trattata come gioco. Destinazioni neogeo/rlm-<hash>/<set>.zip generate dalla pipeline ordinaria. ArcadeValidation e SyncPresence persistenti riportano le stesse identità e hash.
 
-La [selezione libretro](https://github.com/libretro/FBNeo/blob/af50579270a610eda8ac580648d9c12acc7bb565/src/burner/libretro/retro_common.cpp#L547), il [caricamento del BIOS scelto](https://github.com/libretro/FBNeo/blob/af50579270a610eda8ac580648d9c12acc7bb565/src/burn/drv/neogeo/neo_run.cpp#L435) e la [gestione delle ROM opzionali](https://github.com/libretro/FBNeo/blob/af50579270a610eda8ac580648d9c12acc7bb565/src/burner/libretro/libretro.cpp#L909) confermano che un sottoinsieme dipendente dalla configurazione può bastare al core. La compatibilità MVS è dunque **prevista sulla base di dati tecnici**, non verificata avviando i sei titoli. Una configurazione AES/debug/NeoOpen che richiedesse espressamente uno dei quattro file mancanti non è coperta da questo risultato.
+Run ordinario DeviceService: `72030a73-190d-441a-a0cc-0fdabd14b10a`. Il dry-run completo non segnala conflitti; la conferma usa il consenso esplicito dell'utente. ROM e gamelist trasferiti: 201.223.624 byte, oltre ai 1.858.095 byte del BIOS condiviso. Spazio libero finale: **23.411.486.720 byte**, circa 23,41 GB / 21,80 GiB, sopra il margine minimo di 4 GiB.
 
-Il validatore dell'app usa gli attributi del DAT: questa entry non distingue come opzionali le alternative del driver, quindi la politica corrente richiede tutti i 38 componenti. Il rapporto di completezza DAT non deve essere confuso con un profilo minimo di avvio. Non è stato modificato il validatore, ignorato un hash o cambiata la configurazione funzionante del Raspberry. La risoluzione del BIOS condiviso, incluso il clone kf2k2mp2 attraverso il parent, funziona nelle simulazioni; non è emerso un nuovo difetto di risoluzione delle dipendenze condivise.
+Il gamelist Neo Geo è stato creato in `/opt/retropie/configs/all/emulationstation/gamelists/neogeo/gamelist.xml`, con i sei titoli leggibili e percorsi verificati. XML e SHA-256 controllati. EmulationStation era chiusa; metadati non rinviati. Non c'era un vecchio gamelist Neo Geo da sostituire: nessuna sovrascrittura o backup necessario per quel file nuovo. Gli altri gamelist non sono stati modificati.
 
-## Sei giochi: dodici simulazioni nella pipeline esistente
+Secondo dry-run `ec456371-6487-4a38-9631-2ceae63d2e0b`: **required_bytes=0**, nessun nuovo gruppo o metadato da trasferire. Gli hash finali sono stati riletti indipendentemente da SFTP, dopo il successo del run. Audit prima/dopo: dieci file di salvataggio/configurazione identici. Originali ZIP BIOS e giochi invariati.
 
-| Set | Componenti di gioco corretti | BIOS richiesto | Nuovo ZIP: DAT | Vecchio ZIP | Installazione automatica attuale |
-|---|---:|---|---:|---|---|
-| `mslug5` | 13 / 13 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
-| `wjammers` | 11 / 11 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
-| `magdrop3` | 9 / 9 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
-| `pbobblen` | 13 / 13 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
-| `turfmast` | 9 / 9 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
-| `kf2k2mp2` | 14 / 14 | neogeo | 34 / 38 | Non valido | Bloccato: 4 varianti BIOS mancanti nel DAT completo |
+## Test realmente eseguiti
 
-Ogni gioco è stato validato nuovamente con ciascuno dei due ZIP nella modalità non-merged, senza importazioni o conferme. Il nuovo produce esattamente quattro mancanze BIOS per ciascun set, senza componenti di gioco mancanti; il vecchio non soddisfa nessun componente BIOS con nome e hash richiesti. kf2k2mp2 è un clone di kof2002, ma i suoi 14 componenti di gioco nella copia non-merged risultano presenti; la dipendenza neogeo è individuata correttamente attraverso il parent.
+- Suite backend completa: **335 passati**. Sulla versione finale, ulteriori regressioni mirate intelligence/BIOS: **34 passati**, incluse dieci prove dedicate.
+- Casi BIOS: MVS valido con opzionali assenti, obbligatorio mancante, CRC errato, SHA-1 errato, opzionale presente corrotto, revisione sconosciuta, configurazioni incompatibili, dry-run read-only, copia verificata, ripetizione senza scritture, spazio insufficiente e conflitto senza sovrascrittura.
+- Ruff passato, mypy passato su 50 moduli; ESLint, TypeScript, build passati; **17 test frontend e 14 browser passati**.
+- File reali: BIOS e tutti i sei ZIP completi per il profilo MVS, core/configurazione reali, dry-run, trasferimento e verifica remota. Nessun mock usato per dichiarare i risultati dell'installazione reale.
 
-Si tratta di **dodici preflight reali e bloccati**, non di dodici installazioni riuscite. Non viene prodotto né confermato un piano SFTP installabile dopo un controllo DAT negativo. Giochi importati nuovi: 0; giochi sincronizzati nuovi: 0; BIOS trasferiti: 0; giochi avviati durante questa verifica: 0. Originali ROM e BIOS preservati, nessuna modifica a salvataggi o configurazioni del Raspberry, nessun riavvio di EmulationStation.
+## Prova sulla console
+
+Richiesto all'utente di riaprire EmulationStation **dalla console locale**, controllare Neo Geo e provare almeno Metal Slug 5. Conferma ancora in attesa: nessun titolo viene dichiarato avviato sulla base del trasferimento.
+
+**Possiamo installare i sei giochi Neo Geo con questi BIOS? Sì: ora risultano installati e verificati nel profilo MVS standard.** L'avvio effettivo resta uno stato separato e richiede la prova locale.
 
 ## Inventario completo
 
@@ -116,11 +112,3 @@ Si tratta di **dodici preflight reali e bloccati**, non di dodici installazioni 
 | `sfix.sfx` | 131072 | `354029fc` | `4ae4bf23b4c2acff875775d4cbff5583893ce2a1` | Nessuna corrispondenza nel DAT attivo |
 | `sm1.sm1` | 131072 | `97cf998b` | `977387a7c76ef9b21d0b01fa69830e949a9a9626` | Nessuna corrispondenza nel DAT attivo |
 | `000-lo.lo` | 65536 | `e09e253c` | `2b1c719531dac9bb503f22644e6e4236b91e7cfc` | Nessuna corrispondenza nel DAT attivo |
-
-## Diritti e prossima operazione
-
-I due ZIP non contengono testi di licenza o permessi. La presenza su Internet Archive e l'etichetta freeware/UniBIOS non attestano i diritti di trasferimento di tutti i BIOS SNK inclusi. Il sito ufficiale UniBIOS non è risultato accessibile durante la verifica; non viene attribuita all'intero archivio una licenza non dimostrata. Non è stato scaricato altro firmware e non è stato distribuito alcun BIOS.
-
-Per utilizzare il nuovo ZIP in modalità MVS va prima risolta la distinzione tra la politica di DAT completo e un eventuale profilo di avvio esplicitamente verificato rispetto alla configurazione scelta, conservando i controlli di integrità. L'alternativa è completare il DAT esclusivamente con copie legittime dai CRC attesi. Queste quattro varianti non vanno richieste come se fossero intrinsecamente necessarie al boot MVS.
-
-**Possiamo installare i sei giochi Neo Geo con questi BIOS? Non ancora tramite la pipeline automatica attuale.** Il nuovo è il candidato corretto per la compatibilità MVS prevista e contiene tutti i componenti di avvio standard verificati, ma il preflight dell'app rimane bloccato dalle quattro varianti elencate; il vecchio non è utilizzabile per questo DAT. Nessuna prova di avvio è stata dichiarata. Prima di qualsiasi trasferimento BIOS restano necessari diritti di utilizzo verificati e conferma esplicita dell'utente.

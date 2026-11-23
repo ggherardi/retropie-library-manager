@@ -353,6 +353,12 @@ class Intelligence:
             if name in archives and archives[name] != Path(game.local_path):
                 ambiguous.add(name)
             archives[name] = Path(game.local_path)
+        # BIOS remain dependencies, never library game rows. Only exact filenames
+        # in explicitly authorized roots are considered, without recursive scans.
+        for root in self.roots():
+            candidate = Path(root) / "neogeo.zip"
+            if candidate.is_file() and "neogeo" not in archives:
+                archives["neogeo"] = allowed(str(candidate), self.roots())
         results = []
         for index, game in enumerate(games):
             self.checkpoint(run_id, {"done": index, "total": len(games), "file": game.title})
@@ -395,7 +401,12 @@ class Intelligence:
             main_name = selected.parent if body.mode == "merged" and selected.parent else selected.name
             available[main_name] = Path(game.local_path)
             report = validate_set(
-                catalog[selected.name], catalog, available, body.mode, lambda: self.checkpoint(run_id)
+                catalog[selected.name],
+                catalog,
+                available,
+                body.mode,
+                lambda: self.checkpoint(run_id),
+                source_config=source.config,
             )
             report.update(
                 source_id=source.id,
@@ -686,6 +697,12 @@ class Intelligence:
                     "compatibility": "not_assessed",
                     "tested": insight.test_status,
                 }
+                if report.get("bios_profile") == "fbneo-mvs-standard-v1":
+                    if not connection:
+                        raise ValueError("Profilo MVS: verificare la configurazione del dispositivo")
+                    from backend.neogeo_bios import check_mvs_configuration
+
+                    item["bios_configuration"] = check_mvs_configuration(connection)
                 if audit:
                     observed = audit["cores"].get(core, {})
                     binding = db.get(CoreBinding, fingerprint([config["device_id"], source.id, core]))
