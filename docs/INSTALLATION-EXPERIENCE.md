@@ -10,6 +10,11 @@ La modalità iniziale rimane **Importa e installa sul Raspberry**. Seleziona ZIP
 | Da aggiornare sulla console — neutro | File verificati, ma aggiornamento titoli/immagini o elenco ancora necessario | Seguire l'indicazione locale o aggiornare il piano |
 | Serve il tuo intervento — giallo | Serve una scelta, una dipendenza o la risoluzione di un conflitto | Espandere e seguire il passo successivo |
 | Installazione bloccata — rosso | File incompleti, archivio corrotto o formato non preparabile in sicurezza | Correggere o selezionare una copia completa, poi rianalizzare |
+| Console non supportata — rosso | La piattaforma è identificata e manca un percorso di installazione compatibile | Consultare la piattaforma, la motivazione e la fonte nella scheda |
+
+**Console non supportata** conserva titolo e piattaforma nella coda. Per Soul Calibur III Arcade Edition, le ROM di programma corrispondono a Namco System 246. Il catalogo MAME elenca anche un DVD separato. La revisione del disco richiede una verifica propria. I DAT di MAME 2003 e FinalBurn Neo continuano a determinare quali set si possono installare. [Driver MAME 0.280](https://github.com/mamedev/mame/blob/mame0280/src/mame/namco/namcops2.cpp)
+
+Per aggiornare una vecchia anteprima, aprire la scheda e scegliere **Rianalizza**. Se una versione precedente ha diviso un set arcade in chip BIN tutti ancora da identificare, la rianalisi considera l’archivio di provenienza. Per i nastri Commodore 64, l’intestazione TAP identifica la piattaforma e il nome del file suggerisce il titolo.
 
 Gli stati sono scritti per esteso: il colore non è l'unico indicatore. Le fasi non misurabili mostrano un'animazione indeterminata, non una percentuale stimata. La barra a riposo indica solo copie concluse sul totale della selezione, non tempo trascorso. Il numero di operazioni distingue i tentativi ripetuti dalle copie identificate tramite prove affidabili. Le copie ancora da identificare non vengono unite per titolo.
 

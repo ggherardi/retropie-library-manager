@@ -38,6 +38,7 @@ CONSOLE_MEMBERS = {
     ".pbp",
     ".ecm",
     ".ape",
+    ".tap",
 }
 
 
@@ -89,6 +90,24 @@ class ArchiveAnalyzer:
                 decision.get("entry_uid", ""),
                 decision.get("archive_mode", "non-merged"),
             )
+            if arcade.get("reference"):
+                budget.reserve(entries, depth)
+                budget.bytes += sum(e["size"] for e in entries)
+                result = self.identifier.identify(
+                    path, root, roots, volumes, budget.check, archive_result=arcade
+                )
+                result["consumed"] = volumes
+                result["identification"]["archive"] = {
+                    "original": str(path),
+                    "sha256": arcade["sha256"],
+                    "members": len(entries),
+                    "contents": [e["name"] for e in entries][:200],
+                    "chain": chain,
+                    "volumes": [p.name for p in volumes],
+                    "preserved": True,
+                    "extracted": False,
+                }
+                return [(path, result)]
             if arcade["candidates"]:
                 launch_path, launch_root, launch_roots = path, root, roots
                 repacked = False
@@ -285,9 +304,10 @@ class ArchiveAnalyzer:
         if not children:
             parent = review(
                 path,
-                "Nessun gioco riconoscibile: l'archivio contiene soltanto documenti, BIOS o formati non supportati.",
+                "Archivio letto correttamente. Nessun gioco identificato tra i membri.",
                 archive=provenance,
                 ignored_members=ignored,
+                kind="unidentified_archive",
             )
         else:
             parent = {

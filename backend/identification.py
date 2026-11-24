@@ -15,6 +15,7 @@ from backend.content_checks import disc_check, format_check
 from backend.db import CatalogEntry, CatalogSource, DiscoveryEntry, Game
 from backend.import_service import logical_files
 from backend.paths import allowed, digest
+from backend.reference_arcade import recognize
 from backend.scanner import DISC, candidate
 
 
@@ -52,9 +53,8 @@ class Identifier:
         stat = path.stat()
         if (before.st_size, before.st_mtime_ns) != (stat.st_size, stat.st_mtime_ns):
             raise ValueError("Archivio modificato durante l'identificazione")
-        shared = {
-            (str(path.resolve()), stat.st_size, stat.st_mtime_ns): (inventory, digest(path, checkpoint))
-        }
+        archive_sha = digest(path, checkpoint)
+        shared = {(str(path.resolve()), stat.st_size, stat.st_mtime_ns): (inventory, archive_sha)}
         hashes = list({x["sha1"] for x in inventory.values()})[:500]
         crcs = list({x["crc"] for x in inventory.values()})[:500]
         with self.sessions() as db:
@@ -189,6 +189,8 @@ class Identifier:
         return {
             "candidates": candidates,
             "chosen": chosen,
+            "reference": None if candidates else recognize(inventory),
+            "sha256": archive_sha,
             "member_count": len(inventory),
             "reason": ""
             if chosen
@@ -216,6 +218,13 @@ class Identifier:
         }
         if check["kind"] in {"bios", "ignored"}:
             return {"status": "ignored", "identification": info, "candidate": {}, "consumed": [path]}
+        if check["kind"] == "unsupported_platform":
+            return {
+                "status": "unsupported_platform",
+                "identification": info,
+                "candidate": {},
+                "consumed": [path],
+            }
         if check["kind"] == "archive":
             arcade = archive_result or self.archive(
                 path,
@@ -229,6 +238,8 @@ class Identifier:
             if not chosen:
                 candidates = arcade["candidates"]
                 info["size"] = path.stat().st_size
+                if arcade.get("reference"):
+                    info.update(arcade["reference"], kind="unsupported_platform")
                 if candidates and (
                     len(candidates) == 1
                     or candidates[0]["matched_components"] > candidates[1]["matched_components"]
@@ -241,7 +252,7 @@ class Identifier:
                         validation=proposal["report"]["status"],
                     )
                 return {
-                    "status": "awaiting_decision",
+                    "status": "unsupported_platform" if arcade.get("reference") else "awaiting_decision",
                     "identification": info,
                     "candidate": {},
                     "consumed": [path],

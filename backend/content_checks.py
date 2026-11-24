@@ -60,6 +60,16 @@ def format_check(path: Path) -> dict:
     if suffix in DOCUMENTS or (suffix == ".md" and not data[0x100:0x104] == b"SEGA"):
         return {**result, "kind": "ignored", "reason": "Documento, immagine, configurazione o salvataggio"}
     platform, basis = "", ""
+    if suffix == ".tap" and data.startswith(b"C64-TAPE-RAW") and data[12:14] in {b"\x00\x00", b"\x01\x00"}:
+        if len(data) < 20 or size <= 20 or int.from_bytes(data[16:20], "little") != size - 20:
+            raise ValueError("Immagine nastro C64 incompleta: dimensione diversa dall'intestazione TAP")
+        return {
+            **result,
+            "platform": "c64",
+            "kind": "unsupported_platform",
+            "basis": "Intestazione e lunghezza del nastro TAP Commodore 64 verificate. Titolo dal nome del file.",
+            "reason": "L’importazione sul Raspberry non dispone di un profilo per i nastri Commodore 64.",
+        }
     if data.startswith(b"NES\x1a"):
         if len(data) < 16:
             raise ValueError("Header NES troncato")

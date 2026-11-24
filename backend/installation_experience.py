@@ -29,19 +29,59 @@ LABELS = {
     "console_update": "Da aggiornare sulla console",
     "intervention": "Serve il tuo intervento",
     "blocked": "Installazione bloccata",
+    "unsupported_platform": "Console non supportata",
     "local": "Nella libreria PC",
     "excluded": "Escluso",
+}
+
+DIAGNOSIS_LABELS = {
+    "corrupt_archive": "Archivio corrotto",
+    "unreadable_archive": "Archivio non valido",
+    "incomplete_disc": "Gioco incompleto",
+    "incomplete_set": "Gioco incompleto",
+    "missing_bios": "BIOS mancante o non verificato",
+    "insufficient_hardware": "Hardware insufficiente",
+    "unidentified": "Gioco non identificato",
+    "ambiguous_set": "Scelta del set richiesta",
 }
 
 
 def diagnose(item):
     info, error = item.get("identification", {}), item.get("error", {})
+    # On a failed reanalysis, the previous identification is still in the job history.
+    if error.get("cause"):
+        info = {}
     reason = error.get("cause") or info.get("reason", "")
     text = reason.lower()
     candidates = info.get("candidates", [])
     primary = candidates[0].get("report", {}) if candidates else {}
+    complete_candidate = any(c.get("report", {}).get("launchable") for c in candidates)
     bios = set(primary.get("bios", []))
     bios_missing = any(p.get("set") in bios for p in primary.get("problems", []))
+    if item.get("status") == "unsupported_platform" or (
+        "core configurato non disponibile per " in text
+        or "core configurato non rilevato sul raspberry" in text
+    ):
+        return (
+            "unsupported_platform",
+            "unsupported_platform",
+            reason,
+            "L’installazione richiede un profilo e un core compatibili con questa piattaforma.",
+        )
+    if text.startswith("hardware insufficiente") or error.get("code") == "insufficient_hardware":
+        return (
+            "insufficient_hardware",
+            "blocked",
+            reason,
+            "Verifica il requisito hardware indicato per il dispositivo selezionato.",
+        )
+    if info.get("kind") == "unidentified_archive" or text.startswith("nessun gioco riconoscibile"):
+        return (
+            "unidentified",
+            "intervention",
+            "L’archivio è leggibile. Il suo contenuto non identifica un gioco conosciuto.",
+            "Consulta i membri nei dettagli e verifica la piattaforma e la provenienza della copia.",
+        )
     if "ecm" in text or "ape" in info.get("unsupported_formats", []) or info.get("unsupported_formats"):
         return (
             "unsupported_disc",
@@ -51,15 +91,25 @@ def diagnose(item):
         )
     if any(
         w in text
-        for w in ("iso9660", "immagine incompleta", "troncata", "componente mancante", "riferimento mancante")
+        for w in (
+            "iso9660",
+            "immagine incompleta",
+            "nastro c64 incompleta",
+            "rom nes troncata",
+            "bin troncato",
+            "rom game boy troncata",
+            "rom atari 7800 troncata",
+            "componente mancante",
+            "riferimento mancante",
+        )
     ):
         return (
             "incomplete_disc",
             "blocked",
-            "L’immagine del disco sembra incompleta.",
+            "I dati del gioco sono incompleti o incoerenti con il formato dichiarato.",
             "Verifica o sostituisci la copia con tutti i suoi componenti, poi analizzala nuovamente. I file attuali non vengono installati.",
         )
-    if bios_missing or (
+    if (bios_missing and not complete_candidate) or (
         "bios" in text and any(w in text for w in ("manc", "non verific", "non disponibile"))
     ):
         return (
@@ -89,13 +139,32 @@ def diagnose(item):
             "L’archivio è protetto da password.",
             "Fornisci una copia non cifrata che sei autorizzato a usare. La nuova selezione sarà controllata automaticamente.",
         )
+    if "archivio suddiviso incompleto o corrotto" in text:
+        return (
+            "invalid_archive",
+            "blocked",
+            "Il gruppo di volumi è incompleto o danneggiato.",
+            "Controlla tutti i volumi, incluso quello finale, e ripeti l’analisi.",
+        )
+    if "il file zip contiene una pagina html" in text or "file is not a zip file" in text:
+        return (
+            "unreadable_archive",
+            "blocked",
+            "Il file contiene una pagina HTML salvata con estensione ZIP."
+            if "pagina html" in text
+            else "Il file selezionato non è un archivio ZIP leggibile.",
+            "Verifica il file di origine e seleziona una copia ZIP valida.",
+        )
+    if any(w in text for w in ("corrott", "badzip", "bad7z", "bad crc", "crcerror", "lzmaerror")):
+        return (
+            "corrupt_archive",
+            "blocked",
+            "Il decoder ha rilevato dati d’archivio danneggiati.",
+            "Sostituisci la copia con un archivio integro e ripeti l’analisi.",
+        )
     if any(
         w in text
         for w in (
-            "corrott",
-            "crc",
-            "badzip",
-            "bad7z",
             "non supportat",
             "limite",
             "oltre il",
@@ -126,10 +195,24 @@ def diagnose(item):
             "Espandi la scheda e scegli la versione da installare. Il programma continuerà con i controlli previsti.",
         )
     if candidates:
+        if complete_candidate:
+            return (
+                "ambiguous_set",
+                "intervention",
+                "Il DAT ha verificato un set completo. La scelta richiede conferma.",
+                "Apri i dettagli e verifica la variante completa per il core desiderato.",
+            )
+        if primary.get("status") != "incomplete":
+            return (
+                "set_review",
+                "intervention",
+                "Il set arcade richiede una verifica.",
+                "Consulta il rapporto DAT e controlla la versione e le dipendenze.",
+            )
         return (
             "incomplete_set",
             "intervention",
-            "Il gioco è stato riconosciuto, ma il gruppo di file non è completo o univoco.",
+            "Alcuni componenti richiesti dal DAT mancano o differiscono per nome, dimensione o hash.",
             "Controlla i componenti nei dettagli e aggiungi quelli mancanti ottenuti legittimamente. Poi scegli Rianalizza; una scelta non aggira la verifica.",
         )
     if item.get("status") == "awaiting_decision":
@@ -215,15 +298,15 @@ def view(item, batch, run=None):
             "Scegli Riprendi per continuare dal prossimo punto sicuro.",
         )
         actions = ["resume"]
-    elif status in {"awaiting_decision", "failed"}:
+    elif status in {"awaiting_decision", "unsupported_platform", "failed"}:
         code, state, message, action = diagnose(item)
-        if status == "awaiting_decision":
+        if status in {"awaiting_decision", "unsupported_platform"}:
             actions.append("skip")
-            if state == "intervention":
+            if state == "intervention" and code != "unidentified":
                 actions.append("resolve")
         if not item.get("game_id"):
             actions.append("reanalyze")
-        elif state == "intervention":
+        elif state in {"intervention", "unsupported_platform"}:
             actions.append("retry")
     elif status == "waiting_device":
         code, message = "offline_retry", "Attendo la console; la connessione verrà riprovata automaticamente."
@@ -248,7 +331,9 @@ def view(item, batch, run=None):
     )
     return {
         "state": state,
-        "label": LABELS[state],
+        "label": "Gioco non identificato"
+        if code == "identity" and not item.get("identification", {}).get("platform")
+        else DIAGNOSIS_LABELS.get(code, LABELS[state]),
         "section": "active"
         if state == "working"
         else "completed"
@@ -261,7 +346,7 @@ def view(item, batch, run=None):
         else "yellow"
         if state == "intervention"
         else "red"
-        if state == "blocked"
+        if state in {"blocked", "unsupported_platform"}
         else "neutral",
         "phase": PHASES.get(
             status, "Aggiornamento dei titoli sulla console" if state == "console_update" else LABELS[state]
@@ -327,6 +412,10 @@ def metrics(items, batches=()):
         sha = item.get("candidate", {}).get("sha256")
         identity = item.get("game_id") or by_sha.get(sha) or sha
         archive_sha = item.get("identification", {}).get("archive", {}).get("sha256")
+        if item.get("identification", {}).get("match") == "verified" and item["identification"].get(
+            "reference"
+        ):
+            identity = identity or archive_sha
         source = PureWindowsPath(item.get("source_key", ""))
         member = re.sub(r"(?i)\s*\(track\s*\d+\)", "", source.stem).removesuffix(".bin").casefold()
         if "files" in source.parts:
@@ -365,7 +454,7 @@ def metrics(items, batches=()):
         "completed": completed,
         "active": counts["working"],
         "intervention": counts["intervention"],
-        "blocked": counts["blocked"],
+        "blocked": counts["blocked"] + counts["unsupported_platform"],
         "console_update": counts["console_update"],
         "operations": len(grouped),
         "unresolved": sum(k[0].startswith("unresolved") for k in unique),

@@ -1,5 +1,44 @@
 import { expect, test } from "@playwright/test";
 
+test("recognizes a Commodore tape and explains the installation block", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/devices", {
+    headers: { "X-RLM-Request": "1" },
+    data: { name: "Tape Pi", host: "test-pi.invalid", is_default: true },
+  });
+  await page.goto("/");
+  await page.getByLabel("File giochi", { exact: true }).setInputFiles({
+    name: "Arkanoid.tap",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.concat([
+      Buffer.from("C64-TAPE-RAW"),
+      Buffer.from([1, 0, 0, 0, 1, 0, 0, 0, 42]),
+    ]),
+  });
+  await page
+    .getByRole("button", { name: "Analizza selezione", exact: true })
+    .click();
+  const card = page.locator(".install-card").filter({
+    has: page.getByRole("heading", { name: "Arkanoid", exact: true }),
+  });
+  await expect(
+    card.getByText("Console non supportata", { exact: true }),
+  ).toBeVisible();
+  await expect(card.getByText("Commodore 64", { exact: true })).toBeVisible();
+  await card.locator(":scope > summary").click();
+  await expect(
+    card.getByText(
+      "L’importazione sul Raspberry non dispone di un profilo per i nastri Commodore 64.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    card.getByRole("button", { name: "Risolvi problema" }),
+  ).toHaveCount(0);
+});
+
 test("compact cards, contextual actions, tabs, live updates and refresh persistence", async ({
   page,
   request,

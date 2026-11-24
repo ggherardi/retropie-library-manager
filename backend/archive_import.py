@@ -291,6 +291,11 @@ def run_worker(request, checkpoint, work=None):
                             "Archivio suddiviso incompleto o corrotto: verificare che tutti i volumi siano presenti "
                             "e integri, incluso quello finale, poi Rianalizza. Dettagli: " + message
                         )
+                    elif len(parts) == 1 and "File is not a zip file" in message:
+                        with parts[0].open("rb") as stream:
+                            prefix = stream.read(256).lstrip().lower()
+                        if prefix.startswith((b"<html", b"<!doctype html")):
+                            message = "Il file ZIP contiene una pagina HTML, probabilmente una risposta del sito di origine."
                 raise ValueError("Analisi archivio: " + message)
             return value["output"]
         finally:

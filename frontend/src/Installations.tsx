@@ -107,6 +107,7 @@ type Item = {
     size?: number;
     reason?: string;
     basis?: string;
+    catalog_url?: string;
     duplicate?: boolean;
     kind?: string;
     candidates?: Candidate[];
@@ -191,6 +192,7 @@ export const statusLabel: Record<string, string> = {
   ready: "Pronto",
   prepared: "Archivio preparato",
   awaiting_decision: "Da verificare",
+  unsupported_platform: "Console non supportata",
   validating: "Validazione",
   importing: "Importazione",
   enriching: "Metadati e immagini",
@@ -1174,6 +1176,15 @@ export default function Installations({
                       {item.identification.basis && (
                         <p className="muted">{item.identification.basis}</p>
                       )}
+                      {item.identification.catalog_url && (
+                        <a
+                          href={item.identification.catalog_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Consulta il catalogo MAME
+                        </a>
+                      )}
                       <div className="install-evidence">
                         <span>
                           {item.pc_present ? "✓ PC" : "PC: non importato"}
@@ -1315,9 +1326,12 @@ export default function Installations({
                           Rianalizza
                         </button>
                       )}
-                      {item.status === "awaiting_decision" && (
+                      {item.experience.actions.includes("skip") && (
                         <div className="install-review">
-                          <p>{item.identification.reason}</p>
+                          {item.identification.reason !==
+                            item.experience.message && (
+                            <p>{item.identification.reason}</p>
+                          )}
                           {item.identification.variants?.map((variant) => (
                             <button
                               key={variant.source}

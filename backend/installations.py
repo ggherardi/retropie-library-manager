@@ -17,7 +17,7 @@ from backend.acquisition_schemas import EnrichInput
 from backend.archive_pipeline import ArchiveAnalyzer, review
 from backend.archive_volumes import is_archive
 from backend.collection_schemas import MediaApplyInput, MediaPreviewInput
-from backend.config import PLATFORMS
+from backend.config import PLATFORM_LABELS
 from backend.db import (
     ArcadeValidation,
     CatalogRun,
@@ -57,6 +57,7 @@ ACTIVE = {
 STATES = ACTIVE | {
     "prepared",
     "awaiting_decision",
+    "unsupported_platform",
     "ignored",
     "failed",
     "cancelled",
@@ -79,14 +80,15 @@ def failure(phase, file, exc):
         remedy = "Liberare spazio autonomamente o scegliere un altro dispositivo; la riserva di sicurezza resta applicata."
     if any(word in reason.lower() for word in ("remoto", "gamelist", "conflitto")):
         remedy = "Controllare il conflitto e riprovare per rigenerare il dry-run; nessun file esistente viene sovrascritto senza verifica."
+    code, state, _, _ = diagnose({"status": "failed", "error": {"cause": reason}})
     return {
         "phase": phase,
         "file": file,
         "cause": reason,
         "operation": phase,
         "remedy": remedy,
-        "retryable": diagnose({"status": "failed", "error": {"cause": reason}})[1] == "intervention",
-        "code": diagnose({"status": "failed", "error": {"cause": reason}})[0],
+        "retryable": state in {"intervention", "unsupported_platform"},
+        "code": code,
     }
 
 
@@ -242,6 +244,25 @@ class Installations:
                 if current is None:
                     current = InstallationItem(id=str(uuid4()), batch_id=batch_id, source_key=str(path))
                     db.add(current)
+                elif (
+                    current.identification.get("kind") == "archive_container"
+                    and result["status"] == "unsupported_platform"
+                ):
+                    # Older previews split arcade chips into individual games. Fold only
+                    # unresolved rows from the same verified original, retaining their history.
+                    origin = result["identification"]["archive"]
+                    for member in db.scalars(
+                        select(InstallationItem).where(
+                            InstallationItem.batch_id == batch_id,
+                            InstallationItem.status == "awaiting_decision",
+                            InstallationItem.identification["archive"]["original"].as_string() == str(path),
+                            InstallationItem.identification["archive"]["sha256"].as_string()
+                            == origin["sha256"],
+                        )
+                    ):
+                        if not member.game_id and not member.sync_run_id:
+                            member.status = member.phase = "ignored"
+                            member.updated_at = now()
                 for key, value in result.items():
                     if key != "consumed":
                         setattr(current, key, value)
@@ -252,13 +273,52 @@ class Installations:
     def reanalyze(self, item_id):
         with self.lock, self.sessions.begin() as db:
             item = db.get(InstallationItem, item_id)
-            if not item or item.status not in {"awaiting_decision", "failed", "ignored"}:
+            if not item or item.status not in {
+                "awaiting_decision",
+                "failed",
+                "ignored",
+                "unsupported_platform",
+            }:
                 raise ValueError("Rianalisi disponibile per elementi da verificare, esclusi o falliti")
             if item.game_id or item.sync_run_id:
                 raise ValueError("Elemento già importato: usare Riprova per riprendere l'installazione")
             batch = db.get(InstallationBatch, item.batch_id)
             if batch.control != "run":
                 raise ValueError("Riprendere prima il batch in pausa/annullato")
+            origin = item.identification.get("archive", {})
+            if (
+                item.status == "awaiting_decision"
+                and Path(item.source_key).suffix.lower() == ".bin"
+                and not item.identification.get("platform")
+                and origin.get("original")
+                and origin.get("sha256")
+            ):
+                parent = db.scalar(
+                    select(InstallationItem).where(
+                        InstallationItem.batch_id == batch.id,
+                        InstallationItem.source_key == origin["original"],
+                        InstallationItem.status == "prepared",
+                        InstallationItem.identification["archive"]["sha256"].as_string() == origin["sha256"],
+                    )
+                )
+                members = db.scalars(
+                    select(InstallationItem).where(
+                        InstallationItem.batch_id == batch.id,
+                        InstallationItem.source_key != origin["original"],
+                        InstallationItem.identification["archive"]["original"].as_string()
+                        == origin["original"],
+                    )
+                )
+                if parent and all(
+                    m.status == "awaiting_decision"
+                    and not m.game_id
+                    and not m.sync_run_id
+                    and Path(m.source_key).suffix.lower() == ".bin"
+                    and not m.identification.get("platform")
+                    for m in members
+                ):
+                    item = parent
+                    item_id = item.id
             item.status = item.phase = "reanalyzing"
             item.error, item.next_retry = {}, 0
             batch.status = "running" if batch.authorized else "preview"
@@ -406,7 +466,7 @@ class Installations:
                     else "waiting"
                     if any(counts[s] for s in {"waiting_device", "pending_refresh", "awaiting_decision"})
                     else "completed_with_errors"
-                    if counts["failed"]
+                    if counts["failed"] or counts["unsupported_platform"]
                     else "completed"
                 )
                 batch.updated_at = now()
@@ -783,12 +843,15 @@ class Installations:
     def decision(self, item_id, body):
         with self.sessions() as db:
             item = db.get(InstallationItem, item_id)
-            if not item or item.status != "awaiting_decision":
+            if not item or item.status not in {"awaiting_decision", "unsupported_platform"}:
                 raise ValueError("Elemento non in attesa di decisione")
             batch = db.get(InstallationBatch, item.batch_id)
         if body.action == "skip":
             self.update(item.id, "ignored")
+            self.summarize(item.batch_id)
             return {"ok": True}
+        if item.status == "unsupported_platform":
+            raise ValueError("Console non supportata. Rianalizzare il file per aggiornare la compatibilità.")
         if body.variant_source:
             options = item.identification.get("variants", [])
             if body.variant_source not in {o["source"] for o in options}:
@@ -876,7 +939,7 @@ class Installations:
                     else "Avvio non verificato",
                 )
                 run = db.get(SyncRun, item.sync_run_id) if item.sync_run_id else None
-                value["platform_label"] = PLATFORMS.get(value["platform"], "Console da identificare")
+                value["platform_label"] = PLATFORM_LABELS.get(value["platform"], "Console da identificare")
                 value["experience"] = view(value, record(batch), record(run) if run else None)
                 value["installed"] = value["experience"]["files_verified"]
                 result.append(value)

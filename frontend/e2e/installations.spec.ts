@@ -70,7 +70,7 @@ test("browser selection to verified installation, independent ambiguity and repe
       .getByText("Avvio: non verificato", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Serve il tuo intervento", { exact: true }).last(),
+    page.getByText("Gioco non identificato", { exact: true }),
   ).toBeVisible();
   expect((await (await request.get("/api/stats")).json()).games).toBe(
     beforeCount + 1,

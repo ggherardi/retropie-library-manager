@@ -24,6 +24,14 @@ PLATFORMS = {
     "fba": "FinalBurn Neo",
     "psx": "PlayStation",
 }
+# Labels used by identification can include systems without an installation profile.
+PLATFORM_LABELS = {
+    **PLATFORMS,
+    "namco-system-246": "Namco System 246",
+    "namco-system-256": "Namco System 256",
+    "cinematronics-laserdisc": "Cinematronics LaserDisc",
+    "c64": "Commodore 64",
+}
 EXTENSIONS = {
     ".nes": "nes",
     ".fds": "nes",

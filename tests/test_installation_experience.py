@@ -92,7 +92,11 @@ def test_visibility_and_title_review_independent_of_installation():
     [
         ("Dimensione ISO9660 incoerente: immagine incompleta", "incomplete_disc", "blocked"),
         ("ECM/APE non supportati; CUE assente", "unsupported_disc", "blocked"),
-        ("Archivio corrotto CRC", "invalid_archive", "blocked"),
+        ("Archivio corrotto CRC", "corrupt_archive", "blocked"),
+        ("Analisi archivio: BadZipFile: File is not a zip file", "unreadable_archive", "blocked"),
+        ("Analisi archivio: limite dizionario superato", "invalid_archive", "blocked"),
+        ("Hardware insufficiente per il requisito CPU verificato", "insufficient_hardware", "blocked"),
+        ("Core configurato non disponibile per nes", "unsupported_platform", "unsupported_platform"),
         ("Archivio protetto da password", "encrypted", "blocked"),
         ("BIOS PS1 mancante", "missing_bios", "intervention"),
         ("Gamelist cambiato dopo il dry-run", "metadata_changed", "intervention"),
@@ -104,7 +108,7 @@ def test_legacy_structured_diagnosis(reason, code, state):
     result = project(item("failed", game_id=1, error={"cause": reason}))["experience"]
     assert (result["code"], result["state"]) == (code, state)
     assert result["message"] and result["next_step"]
-    assert ("retry" in result["actions"]) == (state == "intervention")
+    assert ("retry" in result["actions"]) == (state in {"intervention", "unsupported_platform"})
 
 
 def test_shared_bios_report_is_an_intervention_not_game_rom_failure():
